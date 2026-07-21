@@ -1,0 +1,37 @@
+{
+  "name": "scenes",
+  "version": "0.0.0",
+  "description": "Agent skill for interactive educational Three.js scenes, plus local CLI and viewer to manage and explore them.",
+  "type": "module",
+  "bin": {
+    "scenes": "./bin/scenes.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "scenes-skill",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {},
+  "keywords": [
+    "three.js",
+    "education",
+    "agent-skill",
+    "cli",
+    "scenes"
+  ],
+  "author": "Igo Akulov",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/igoakulov/scenes.git"
+  },
+  "bugs": {
+    "url": "https://github.com/igoakulov/scenes/issues"
+  },
+  "homepage": "https://github.com/igoakulov/scenes#readme"
+}
