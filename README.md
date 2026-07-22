@@ -2,7 +2,7 @@
 
 An agent **skill** for interactive 2D/3D educational scenes and showcases — plus the local tooling to manage and view them.
 
-Scene content is **pretty much pure [Three.js](https://threejs.org/)** in a small portable package. The skill teaches the package shape and the loop; agents write the code.
+Scene content is **pretty much pure [Three.js](https://threejs.org/)** in a small portable scene folder. The skill teaches the layout and the loop; agents write the code.
 
 ## Who it’s for
 
@@ -14,15 +14,11 @@ Scene content is **pretty much pure [Three.js](https://threejs.org/)** in a smal
 
 | Piece | Role |
 |-------|------|
-| **Skill** | How agents author portable scene packages and use the product |
+| **Skill** | How agents author portable scenes and use the product |
 | **CLI** | Init workspace, validate, list, show |
 | **Viewer + runtime** | Browse the library, open a scene, parameters, camera, tools |
 
 Ships as **one npm package** when published: skill + CLI + embedded viewer together.
-
-## Status
-
-Early setup. Implementation has not started.
 
 ## License
 

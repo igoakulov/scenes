@@ -13,7 +13,11 @@
     "LICENSE",
     "README.md"
   ],
-  "scripts": {},
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test --import ./test/register-three-hook.js test/params.test.js test/scene-validate.test.js test/cli.test.js",
+    "prepare": "npm run build"
+  },
   "keywords": [
     "three.js",
     "education",
@@ -33,5 +37,12 @@
   "bugs": {
     "url": "https://github.com/igoakulov/scenes/issues"
   },
-  "homepage": "https://github.com/igoakulov/scenes#readme"
+  "homepage": "https://github.com/igoakulov/scenes#readme",
+  "dependencies": {
+    "three": "^0.172.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
 }

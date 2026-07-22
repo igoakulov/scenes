@@ -1,0 +1,6 @@
+{
+  "title": "Params fail at defaults",
+  "description": "validateParams rejects defaults.",
+  "tags": [],
+  "dimensions": 2
+}
