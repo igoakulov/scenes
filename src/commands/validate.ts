@@ -1,6 +1,7 @@
 import { requireWorkspace } from "../config.js";
 import {
   formatIssueLines,
+  printFail,
   printSceneBlock,
   printWorkspace,
 } from "../print.js";
@@ -37,7 +38,7 @@ export async function cmdValidate(id: string | undefined): Promise<number> {
   }
 
   if (failed > 0) {
-    console.error(`fail ${failed}/${ids.length}`);
+    printFail(failed, ids.length);
     return 1;
   }
   return 0;

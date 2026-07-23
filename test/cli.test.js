@@ -39,6 +39,15 @@ function runScenes(args, env) {
 }
 
 describe("CLI", () => {
+  it("fails without workspace", async () => {
+    const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
+    // Any command that needs config workspace (list / validate / show).
+    const r = await runScenes(["list"], { SCENES_CONFIG_DIR: configDir });
+    assert.equal(r.code, 1);
+    assert.match(r.stderr, /no workspace/);
+    await rm(configDir, { recursive: true, force: true });
+  });
+
   it("init + list (no scene.js import) + validate", async () => {
     const workspace = await mkdtemp(join(tmpdir(), "scenes-ws-"));
     const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));

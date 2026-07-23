@@ -17,11 +17,12 @@ export interface SceneMetadata {
   [key: string]: unknown;
 }
 
-export type ParamType = "number" | "boolean" | "select";
+/** Writable control types — values land in flat `ctx.params[key]`. */
+export type WritableParamType = "number" | "boolean" | "select";
 
 export interface NumberParamField {
-  key: string;
   type: "number";
+  key: string;
   label: string;
   min: number;
   max: number;
@@ -30,26 +31,60 @@ export interface NumberParamField {
 }
 
 export interface BooleanParamField {
-  key: string;
   type: "boolean";
+  key: string;
   label: string;
   default: boolean;
 }
 
 export interface SelectParamField {
-  key: string;
   type: "select";
+  key: string;
   label: string;
   options: string[];
   default: string;
 }
 
-export type ParamField = NumberParamField | BooleanParamField | SelectParamField;
+export type WritableParamField =
+  | NumberParamField
+  | BooleanParamField
+  | SelectParamField;
+
+/** @deprecated Use WritableParamField — kept as alias during transition. */
+export type ParamField = WritableParamField;
+
+export interface NoteParamNode {
+  type: "note";
+  text: string;
+}
+
+export interface LabelParamNode {
+  type: "label";
+  label: string;
+  value: string;
+}
+
+export interface ParamCard {
+  type: "card";
+  title: string;
+  id?: string;
+  children: ParamsNode[];
+}
+
+/** Ordered node in `params()` tree (root array or card.children). */
+export type ParamsNode =
+  | ParamCard
+  | WritableParamField
+  | NoteParamNode
+  | LabelParamNode;
+
+export type ParamValue = number | boolean | string;
 
 export interface ParamValidationIssue {
   message: string;
   key?: string;
-  groupId?: string;
+  /** Optional card id for UI association (replaces old groupId). */
+  cardId?: string;
 }
 
 export interface AppConfig {

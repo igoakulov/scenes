@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { requireWorkspace } from "../config.js";
-import { printSceneBlock, printWorkspace } from "../print.js";
+import { printHint, printSceneBlock, printWorkspace } from "../print.js";
 import { parseMetadata } from "../validate/metadata.js";
 import { listSceneIds, sceneDir } from "../workspace.js";
 
@@ -37,7 +37,7 @@ export async function cmdList(): Promise<number> {
   }
 
   if (hadWarning) {
-    console.error("hint: scenes validate");
+    printHint("scenes validate");
   }
   return 0;
 }

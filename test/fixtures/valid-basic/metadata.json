@@ -1,5 +1,5 @@
 {
   "title": "Valid basic",
-  "description": "Minimal valid scene for tests.",
+  "description": "Minimal valid scene for tests. Area $= \\tfrac12 bh$.",
   "tags": ["test"]
 }

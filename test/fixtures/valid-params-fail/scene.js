@@ -3,12 +3,18 @@ export function setup() {}
 export function params() {
   return [
     {
-      key: "n",
-      type: "number",
-      label: "N",
-      min: 0,
-      max: 10,
-      default: 0,
+      type: "card",
+      title: "N",
+      children: [
+        {
+          key: "n",
+          type: "number",
+          label: "N",
+          min: 0,
+          max: 10,
+          default: 0,
+        },
+      ],
     },
   ];
 }

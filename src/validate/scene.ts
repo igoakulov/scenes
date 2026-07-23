@@ -5,9 +5,9 @@ import type { SceneValidationResult, ValidationIssue } from "../types.js";
 import { isKebabCaseId, sceneDir } from "../workspace.js";
 import { parseMetadata } from "./metadata.js";
 import {
-  defaultsFromFields,
-  validateParamFields,
+  defaultsFromWritable,
   validateParamsResult,
+  validateParamsTree,
 } from "./params.js";
 
 export async function validateScene(
@@ -121,15 +121,15 @@ async function validateSceneModule(scenePath: string): Promise<ValidationIssue[]
     return issues;
   }
 
-  const { fields, issues: fieldIssues } = validateParamFields(
+  const { writable, issues: treeIssues } = validateParamsTree(
     fieldsRaw,
     "params",
   );
-  issues.push(...fieldIssues);
-  if (!fields) return issues;
+  issues.push(...treeIssues);
+  if (!writable) return issues;
 
   if (typeof mod.validateParams === "function") {
-    const defaults = defaultsFromFields(fields);
+    const defaults = defaultsFromWritable(writable);
     let result: unknown;
     try {
       result = (mod.validateParams as (p: unknown) => unknown)(defaults);

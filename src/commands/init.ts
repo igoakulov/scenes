@@ -1,5 +1,5 @@
 import { readConfig, writeConfig } from "../config.js";
-import { printWorkspace } from "../print.js";
+import { printHint, printWorkspace } from "../print.js";
 import {
   ensureWorkspaceLayout,
   resolveWorkspacePath,
@@ -17,7 +17,7 @@ export async function cmdInit(
   } catch (err) {
     if (!force) {
       console.error(err instanceof Error ? err.message : String(err));
-      console.error("fix config or: scenes init --force");
+      printHint("fix config or: scenes init --force");
       return 1;
     }
     current = null;
@@ -31,7 +31,7 @@ export async function cmdInit(
       return 0;
     }
     console.error(`workspace set: ${current.workspace}`);
-    console.error(`switch: scenes init ${pathArg ?? "."} --force`);
+    printHint(`scenes init ${pathArg ?? "."} --force`);
     return 1;
   }
 

@@ -1,0 +1,197 @@
+/* App chrome layout — explicit so WebGL host + side sheet cannot collapse.
+   Colors still come from shadcn theme CSS variables. */
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+.app-shell {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  background: var(--background);
+}
+
+.wordmark {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  z-index: 2;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+  pointer-events: none;
+  user-select: none;
+}
+
+.viewport-canvas-host {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.viewport-canvas-host canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.viewport-error {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2;
+  border-radius: 0.375rem;
+  border: 1px solid color-mix(in oklch, var(--destructive) 40%, transparent);
+  background: color-mix(in oklch, var(--card) 92%, transparent);
+  padding: 0.5rem 0.75rem;
+  font-size: 12px;
+  color: var(--destructive);
+}
+
+/* Always top-right of the window (over sheet header when open). One node, no flash. */
+.panel-toggle-float {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 20;
+}
+
+/* Right sheet: always a real flex sibling (not modal overlay). */
+.sheet {
+  flex: 0 0 auto;
+  height: 100%;
+  min-height: 0;
+  border-left: 1px solid var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+  overflow: hidden;
+  transition: width 150ms ease;
+  z-index: 5;
+}
+
+.sheet-open {
+  width: 320px;
+}
+
+.sheet-closed {
+  width: 0;
+  border-left-width: 0;
+}
+
+.sheet-inner {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  height: 100%;
+  min-height: 0;
+  background: var(--card);
+}
+
+.sheet-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  /* Room for the floating panel toggle overlaid at top-right */
+  padding: 0 40px 0 4px;
+  background: var(--card);
+}
+
+.sheet-title {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Muted chevron back — no Library label, no button chrome */
+.sheet-back {
+  appearance: none;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sheet-back:hover {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+.sheet-tabs {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Pre-option-C: ghost-style tabs (no underline, no header separator) */
+.sheet-tab {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  margin: 0;
+  padding: 0 10px;
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sheet-tab:hover {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+.sheet-tab-active {
+  color: var(--foreground);
+  background: var(--muted);
+  font-weight: 600;
+}
+
+.sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+  background: var(--card);
+}

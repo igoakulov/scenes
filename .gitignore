@@ -12,14 +12,16 @@ Thumbs.db
 *.swo
 *~
 
-# Node / build (for when development starts)
+# Node / build
 node_modules/
 dist/
+# matches viewer/dist too (prebuilt for npm via prepare; not committed)
 build/
 coverage/
 *.tsbuildinfo
 .npm/
 .eslintcache
+.vite/
 
 # Env / secrets
 .env
@@ -36,3 +38,7 @@ pnpm-debug.log*
 tmp/
 temp/
 *.log
+
+# Local scene libraries (not package source; workspace content when developing here)
+test-scenes/
+scenes/

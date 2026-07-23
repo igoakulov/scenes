@@ -6,10 +6,19 @@ export function printWorkspace(workspace: string): void {
   console.log(`workspace ${workspace}`);
 }
 
+/** Help / cold-start: no config yet. */
+export function printWorkspaceNone(): void {
+  console.log("workspace (none — run scenes init)");
+}
+
+/** Help: config unreadable. */
+export function printWorkspaceErr(message: string): void {
+  console.log(`workspace ERR ${message}`);
+}
+
 /**
- * One scene block — same shape for list and validate.
+ * One scene block — same shape for list, validate, show gate.
  *   @ scenes/<id>
- *   - detail
  *   - detail
  */
 export function printSceneBlock(
@@ -28,4 +37,19 @@ export function formatIssueLines(
   issues: { path: string; message: string }[],
 ): string[] {
   return issues.map((i) => `${i.path}: ${i.message}`);
+}
+
+/** stderr: hint: <msg> */
+export function printHint(msg: string): void {
+  console.error(`hint: ${msg}`);
+}
+
+/** stderr: fail <failed>/<total> */
+export function printFail(failed: number, total: number): void {
+  console.error(`fail ${failed}/${total}`);
+}
+
+/** stdout: listen <url> — show server (and similar). */
+export function printListen(url: string): void {
+  console.log(`listen ${url}`);
 }

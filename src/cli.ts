@@ -1,6 +1,7 @@
 import { cmdHelp } from "./commands/help.js";
 import { cmdInit } from "./commands/init.js";
 import { cmdList } from "./commands/list.js";
+import { cmdShow } from "./commands/show.js";
 import { cmdValidate } from "./commands/validate.js";
 
 function parseArgs(argv: string[]): {
@@ -31,6 +32,8 @@ async function main(): Promise<number> {
         return await cmdList();
       case "validate":
         return await cmdValidate(positionals[0]);
+      case "show":
+        return await cmdShow(positionals[0]);
       default:
         console.error(`Unknown command: ${command}`);
         console.error("Run `scenes help` for usage.");
