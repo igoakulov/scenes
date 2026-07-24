@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   defaultsFromWritable,
+  resolveLabelValue,
   validateParamsTree,
 } from "../dist/validate/params.js";
 
@@ -148,5 +149,45 @@ describe("validateParamsTree", () => {
     );
     assert.equal(issues.length, 0);
     assert.equal(writable?.length, 1);
+  });
+
+  it("accepts number unit and derived label function", () => {
+    const { nodes, writable, issues } = validateParamsTree(
+      [
+        {
+          key: "a_base",
+          type: "number",
+          label: "Base",
+          min: 0,
+          max: 10,
+          default: 3,
+          unit: "u",
+        },
+        {
+          key: "a_height",
+          type: "number",
+          label: "Height",
+          min: 0,
+          max: 10,
+          default: 2,
+          unit: "u",
+        },
+        {
+          type: "label",
+          label: "Area",
+          value: (p) => (0.5 * p.a_base * p.a_height).toFixed(2),
+        },
+      ],
+      "params",
+    );
+    assert.equal(issues.length, 0, JSON.stringify(issues));
+    assert.equal(writable?.length, 2);
+    assert.equal(writable?.[0].unit, "u");
+    const area = nodes?.[2];
+    assert.equal(area?.type, "label");
+    assert.equal(
+      resolveLabelValue(area.value, { a_base: 3, a_height: 2 }),
+      "3.00",
+    );
   });
 });

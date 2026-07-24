@@ -184,8 +184,12 @@ function validateLabel(
   if (typeof raw.label !== "string" || raw.label.trim() === "") {
     issues.push({ path: `${path}.label`, message: "want non-empty string" });
   }
-  if (typeof raw.value !== "string") {
-    issues.push({ path: `${path}.value`, message: "want string" });
+  // Static string or pure (params) => string for derived display (area, angles, …).
+  if (typeof raw.value !== "string" && typeof raw.value !== "function") {
+    issues.push({
+      path: `${path}.value`,
+      message: "want string or (params) => string",
+    });
   }
   if (raw.key !== undefined) {
     issues.push({
@@ -193,18 +197,28 @@ function validateLabel(
       message: "label is read-only; omit key (not in ctx.params)",
     });
   }
-  if (typeof raw.value === "function") {
-    issues.push({
-      path: `${path}.value`,
-      message: "functions unsupported; use static string (couple via onParamsChange if needed)",
-    });
-  }
   if (issues.length > before) return undefined;
   return {
     type: "label",
     label: raw.label as string,
-    value: raw.value as string,
+    value: raw.value as LabelParamNode["value"],
   };
+}
+
+/** Resolve a label for display (string as-is; function called with flat params). */
+export function resolveLabelValue(
+  value: LabelParamNode["value"],
+  params: Record<string, ParamValue>,
+): string {
+  if (typeof value === "function") {
+    try {
+      const out = value(params);
+      return typeof out === "string" ? out : String(out);
+    } catch (err) {
+      return `(error: ${err instanceof Error ? err.message : String(err)})`;
+    }
+  }
+  return value;
 }
 
 function registerKey(
@@ -262,6 +276,9 @@ function validateNumber(
   ) {
     issues.push({ path: `${path}.step`, message: "want positive number" });
   }
+  if (raw.unit !== undefined && typeof raw.unit !== "string") {
+    issues.push({ path: `${path}.unit`, message: "want string" });
+  }
 
   if (issues.length > before || !keyOk) return undefined;
 
@@ -274,6 +291,7 @@ function validateNumber(
     default: raw.default as number,
   };
   if (typeof raw.step === "number") field.step = raw.step;
+  if (typeof raw.unit === "string") field.unit = raw.unit;
   writable.push(field);
   return field;
 }

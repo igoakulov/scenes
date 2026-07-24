@@ -28,6 +28,8 @@ export interface NumberParamField {
   max: number;
   default: number;
   step?: number;
+  /** Optional display unit (e.g. "m", "°", "AU") — not part of ctx.params. */
+  unit?: string;
 }
 
 export interface BooleanParamField {
@@ -53,15 +55,25 @@ export type WritableParamField =
 /** @deprecated Use WritableParamField — kept as alias during transition. */
 export type ParamField = WritableParamField;
 
+export type ParamValue = number | boolean | string;
+
 export interface NoteParamNode {
   type: "note";
   text: string;
 }
 
+/**
+ * Read-only row. `value` is a fixed string, or a pure function of the flat
+ * params bag (recomputed when controls change — e.g. derived angles/sides).
+ */
+export type LabelValue =
+  | string
+  | ((params: Record<string, ParamValue>) => string);
+
 export interface LabelParamNode {
   type: "label";
   label: string;
-  value: string;
+  value: LabelValue;
 }
 
 export interface ParamCard {
@@ -77,8 +89,6 @@ export type ParamsNode =
   | WritableParamField
   | NoteParamNode
   | LabelParamNode;
-
-export type ParamValue = number | boolean | string;
 
 export interface ParamValidationIssue {
   message: string;

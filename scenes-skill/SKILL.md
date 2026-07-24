@@ -95,6 +95,7 @@ export function setup(ctx) {
 // Locked: array of nodes; card = { type:"card", title, children[] }; single children list
 // (note/label/controls; nest cards sparingly). No parallel `fields`. Writable keys unique
 // tree-wide and flat on ctx.params (prefix: a_base, b_base) — not nested objects.
+// number may include unit (display only). label.value = string OR (params) => string (derived).
 
 export function params() {
   return [
@@ -103,15 +104,17 @@ export function params() {
       title: "Triangle comparison",
       children: [
         { type: "note", text: "Area $= \\tfrac12 · base · height$." },
-        { key: "size", type: "number", label: "Box size", min: 0.1, max: 5, step: 0.1, default: 1 },
+        { key: "size", type: "number", label: "Box size", min: 0.1, max: 5, step: 0.1, default: 1, unit: "u" },
         { key: "on", type: "boolean", label: "On", default: true },
         { key: "kind", type: "select", label: "Kind", options: ["solid", "wire"], default: "solid" },
         {
           type: "card", title: "Triangle A", // nested example; params stay flat (a_base, not triangle.a_base)
           children: [
-            { key: "a_base", type: "number", label: "Base", min: 0.5, max: 8, step: 0.1, default: 3 },
-            { key: "a_height", type: "number", label: "Height", min: 0.5, max: 8, step: 0.1, default: 2 },
+            { key: "a_base", type: "number", label: "Base", min: 0.5, max: 8, step: 0.1, default: 3, unit: "u" },
+            { key: "a_height", type: "number", label: "Height", min: 0.5, max: 8, step: 0.1, default: 2, unit: "u" },
             { type: "label", label: "Color", value: "blue" },
+            // derived: recomputed when writables change (panel passes flat ctx.params)
+            { type: "label", label: "Area", value: (p) => (0.5 * p.a_base * p.a_height).toFixed(2) },
           ],
         },
       ],
