@@ -4,6 +4,8 @@ import type {
   NumberParamField,
   BooleanParamField,
   SelectParamField,
+  MultiselectParamField,
+  StringParamField,
   ParamCard,
   ParamValidationIssue,
   ParamValue,
@@ -11,6 +13,9 @@ import type {
   ValidationIssue,
   WritableParamField,
 } from "../types.js";
+import { PARAM_NODE_TYPES } from "../types.js";
+
+const ALLOWED_TYPES_MSG = `want ${PARAM_NODE_TYPES.join("|")}`;
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
@@ -91,10 +96,14 @@ function validateNode(
       return validateBoolean(raw, path, issues, seenKeys, writable);
     case "select":
       return validateSelect(raw, path, issues, seenKeys, writable);
+    case "multiselect":
+      return validateMultiselect(raw, path, issues, seenKeys, writable);
+    case "string":
+      return validateString(raw, path, issues, seenKeys, writable);
     default:
       issues.push({
         path: `${path}.type`,
-        message: "want card|note|label|number|boolean|select",
+        message: ALLOWED_TYPES_MSG,
       });
       return undefined;
   }
@@ -370,13 +379,107 @@ function validateSelect(
   return field;
 }
 
+function validateMultiselect(
+  raw: Record<string, unknown>,
+  path: string,
+  issues: ValidationIssue[],
+  seenKeys: Set<string>,
+  writable: WritableParamField[],
+): MultiselectParamField | undefined {
+  const before = issues.length;
+  const keyOk = registerKey(raw.key, path, issues, seenKeys);
+
+  if (typeof raw.label !== "string" || raw.label.trim() === "") {
+    issues.push({ path: `${path}.label`, message: "want non-empty string" });
+  }
+  if (!Array.isArray(raw.options) || raw.options.length === 0) {
+    issues.push({ path: `${path}.options`, message: "want non-empty string[]" });
+  } else {
+    raw.options.forEach((opt, j) => {
+      if (typeof opt !== "string") {
+        issues.push({ path: `${path}.options[${j}]`, message: "want string" });
+      }
+    });
+  }
+  if (!Array.isArray(raw.default)) {
+    issues.push({ path: `${path}.default`, message: "want string[]" });
+  } else {
+    const opts =
+      Array.isArray(raw.options) && raw.options.every((o) => typeof o === "string")
+        ? (raw.options as string[])
+        : null;
+    raw.default.forEach((d, j) => {
+      if (typeof d !== "string") {
+        issues.push({ path: `${path}.default[${j}]`, message: "want string" });
+      } else if (opts && !opts.includes(d)) {
+        issues.push({
+          path: `${path}.default[${j}]`,
+          message: "must be in options",
+        });
+      }
+    });
+  }
+
+  if (issues.length > before || !keyOk) return undefined;
+
+  const field: MultiselectParamField = {
+    type: "multiselect",
+    key: raw.key as string,
+    label: raw.label as string,
+    options: raw.options as string[],
+    default: raw.default as string[],
+  };
+  writable.push(field);
+  return field;
+}
+
+function validateString(
+  raw: Record<string, unknown>,
+  path: string,
+  issues: ValidationIssue[],
+  seenKeys: Set<string>,
+  writable: WritableParamField[],
+): StringParamField | undefined {
+  const before = issues.length;
+  const keyOk = registerKey(raw.key, path, issues, seenKeys);
+
+  if (typeof raw.label !== "string" || raw.label.trim() === "") {
+    issues.push({ path: `${path}.label`, message: "want non-empty string" });
+  }
+  if (typeof raw.default !== "string") {
+    issues.push({ path: `${path}.default`, message: "want string" });
+  }
+  if (
+    raw.placeholder !== undefined &&
+    typeof raw.placeholder !== "string"
+  ) {
+    issues.push({ path: `${path}.placeholder`, message: "want string" });
+  }
+
+  if (issues.length > before || !keyOk) return undefined;
+
+  const field: StringParamField = {
+    type: "string",
+    key: raw.key as string,
+    label: raw.label as string,
+    default: raw.default as string,
+  };
+  if (typeof raw.placeholder === "string") {
+    field.placeholder = raw.placeholder;
+  }
+  writable.push(field);
+  return field;
+}
+
 /** Flat defaults object from writable fields only. */
 export function defaultsFromWritable(
   writable: WritableParamField[],
 ): Record<string, ParamValue> {
   const defaults: Record<string, ParamValue> = {};
   for (const f of writable) {
-    defaults[f.key] = f.default;
+    // Copy multiselect arrays so callers cannot mutate the field default.
+    defaults[f.key] =
+      f.type === "multiselect" ? [...f.default] : f.default;
   }
   return defaults;
 }

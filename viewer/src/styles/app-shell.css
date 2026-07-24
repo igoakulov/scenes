@@ -110,15 +110,15 @@ body,
   align-items: center;
   gap: 2px;
   height: 40px;
-  /* Left inset matches vertical air around header controls; right: panel toggle */
-  padding: 0 40px 0 6px;
+  /* Left: same as sheet body content (px-3); right: room for panel toggle */
+  padding: 0 40px 0 12px;
   background: var(--card);
 }
 
 .sheet-body {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
-  padding: 12px;
+  overflow: hidden;
+  padding: 0;
   background: var(--card);
 }

@@ -8,7 +8,7 @@ description: >-
 
 # Scenes
 
-Plain Three.js scene folders + `scenes` CLI + local viewer. You write content; runtime owns camera, lights, Grid, sheet chrome, Explore cards (when available), annotation chips.
+Plain Three.js scene folders + `scenes` CLI + local viewer. You write content; runtime owns camera, lights, Grid, sheet chrome, Explore cards, annotation chips.
 
 ## Install
 
@@ -50,71 +50,140 @@ Create scene folders with file tools — there is no `scenes new`.
 
 ```json
 {
-  "title": "Triangle comparison",
-  "description": "Educational summary + conversation notes. Math: $E=mc^2$ or $$\\int x\\,dx$$.",
-  "tags": ["geometry"],
-  "dimensions": 3, // optional 2|3; default 3 → orbit, 2 → pan/zoom
-  "attribution": { "model": "gpt-…", "author": "…" } // optional
+  "title": "Polyline through points",
+  "description": "Edit x,y pairs; runtime redraws a polyline in the XY plane. Math: $y = f(x)$ samples.",
+  "tags": ["geometry", "graphs"],
+  "dimensions": 3,
+  "attribution": { "model": "gpt-…", "author": "…" }
 }
 ```
+
+- `dimensions`: optional 2 | 3 (default 3) → orbit vs pan/zoom
+- `attribution`: optional object
 
 ### World
 
 RH Y-UP (Three defaults): +X right, +Y up, +Z toward viewer on face-on XY; into scene = −Z.
 
-### `scene.js`
+### `params()` node types (exhaustive)
+
+`export function params()` returns an array of nodes. Omit or return `[]` if no Explore cards.
+
+VALID `type` VALUES ONLY (no aliases — unknown types fail `scenes validate`):
+
+- `card` — layout only. Fields: `title`, `children[]`, optional `id`
+- `note` — RO prose. Fields: `text` (KaTeX `$…$` / `$$…$$` ok). No `key`
+- `label` — RO row. Fields: `label`, `value` string OR `(params) => string` (derived; recomputed when controls change). No `key`
+- `number` → `ctx.params[key]` is number. Fields: `key`, `label`, `default`, MIN, MAX (required), optional `step`, optional `unit` (display suffix only, e.g. `"°"`, `"u"`, `"rad"`)
+- `boolean` → boolean. Fields: `key`, `label`, `default`
+- `select` → string. Fields: `key`, `label`, `options: string[]`, `default` must be in options
+- `multiselect` → string[]. Fields: `key`, `label`, `options: string[]`, `default: string[]` each ∈ options
+- `string` → string. Fields: `key`, `label`, `default`, optional `placeholder` (in-input format hint)
+
+Rules:
+
+- Single ordered `children` on cards — NO parallel `fields`
+- Writable keys UNIQUE tree-wide; bag is FLAT (`v_x`, not nested objects)
+- Nest cards sparingly
+- Angles: `number` + `unit: "rad"` or `unit: "°"` — no separate `angle` type
+- 2–3 component vectors: SEPARATE `number` keys (`v_x`, `v_y`, `v_z`)
+- Variable-length / free formats (polylines, long lists): `string` + parse in `setup`; put expected format in `placeholder`
+- Multi flags from a fixed list: `multiselect` (not a comma-separated string)
+- Do NOT invent types (`vector`, `color`, `angle`, `text`, …)
+
+### `scene.js` (example — polyline + overlays)
 
 ```js
 import * as THREE from "three";
 
-// setup once per load; ctx.params = flat defaults from writable params() fields
-// ctx: root, params, baseUrl (absolute scene folder URL, trailing /)
+// setup runs on load and again when Explore params change (camera stays put).
+// ctx: root, params (flat bag), baseUrl (absolute scene folder URL, trailing /)
 
-export function setup(ctx) {
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(ctx.params.size ?? 1, 1, 1),
-    new THREE.MeshStandardMaterial({ color: 0x88aaff }),
-  );
-  mesh.name = "box";
-  ctx.root.add(mesh);
-
-  // annotation: empty Object3D + userData.annotation (runtime CSS2D + KaTeX)
-  const label = new THREE.Object3D();
-  label.position.set(0, 0.8, 0);
-  label.userData.annotation = "Unit cube · $1\\times1\\times1$";
-  label.name = "box-label";
-  ctx.root.add(label);
-
-  // --- optional: local media under assets/ ---
-  // const texUrl = new URL("assets/tex.png", ctx.baseUrl).href; // path relative to scene folder
-  // const tex = new THREE.TextureLoader().load(texUrl);
-  // mesh.material.map = tex;
+function parseXYPairs(raw) {
+  const pts = String(raw).split(";").map((s) => s.trim()).filter(Boolean)
+    .map((pair) => pair.split(/[\s,]+/).map(Number));
+  if (pts.length < 2 || pts.some((p) => p.length < 2 || p.some((n) => !Number.isFinite(n)))) {
+    return [[0, 0], [1, 1], [2, 0.5]]; // fallback if user mid-edit or bad tokens
+  }
+  return pts.map(([x, y]) => [x, y]);
 }
 
-// Omit params / return [] if no Explore cards.
-// Locked: array of nodes; card = { type:"card", title, children[] }; single children list
-// (note/label/controls; nest cards sparingly). No parallel `fields`. Writable keys unique
-// tree-wide and flat on ctx.params (prefix: a_base, b_base) — not nested objects.
-// number may include unit (display only). label.value = string OR (params) => string (derived).
+export function setup(ctx) {
+  const p = ctx.params;
+  const layers = Array.isArray(p.layers) ? p.layers : [];
+  const pts = parseXYPairs(p.points ?? "");
+  const lift = (p.lift ?? 0) * Math.PI / 180; // degree unit in UI → radians here
+
+  // polyline through points in XY, slight Y rotation for depth in 3D view
+  if (layers.includes("curve")) {
+    const pos = [];
+    for (const [x, y] of pts) pos.push(x, y, 0);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xf97316 }));
+    line.rotation.y = lift;
+    line.name = "polyline";
+    ctx.root.add(line);
+  }
+
+  // endpoint markers (small spheres)
+  if (layers.includes("ends")) {
+    for (let i = 0; i < pts.length; i++) {
+      const [x, y] = pts[i];
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(0.08, 12, 12),
+        new THREE.MeshStandardMaterial({ color: i === 0 || i === pts.length - 1 ? 0x22c55e : 0x64748b }),
+      );
+      m.position.set(x, y, 0);
+      m.name = `pt-${i}`;
+      ctx.root.add(m);
+    }
+  }
+
+  // optional offset arrow from origin using SEPARATE number components (not a vector type)
+  if (layers.includes("offset")) {
+    const ox = p.off_x ?? 0, oy = p.off_y ?? 0, oz = p.off_z ?? 0;
+    const dir = new THREE.Vector3(ox, oy, oz);
+    if (dir.lengthSq() > 1e-8) {
+      const arr = new THREE.ArrowHelper(dir.clone().normalize(), new THREE.Vector3(0, 0, 0), dir.length(), 0x88aaff);
+      arr.name = "offset";
+      ctx.root.add(arr);
+    }
+  }
+
+  if (p.show_label !== false) {
+    const ann = new THREE.Object3D();
+    ann.position.set(pts[pts.length - 1][0], pts[pts.length - 1][1] + 0.25, 0);
+    // annotation: plain string; KaTeX only inside $...$ (in JS write \\ for one \)
+    ann.userData.annotation = `${pts.length} pts`;
+    ann.name = "count-label";
+    ctx.root.add(ann);
+  }
+
+  // optional media: new URL("assets/tex.png", ctx.baseUrl).href
+}
 
 export function params() {
   return [
     {
-      type: "card", // id: "tri" optional
-      title: "Triangle comparison",
+      type: "card",
+      title: "Polyline",
       children: [
-        { type: "note", text: "Area $= \\tfrac12 · base · height$." },
-        { key: "size", type: "number", label: "Box size", min: 0.1, max: 5, step: 0.1, default: 1, unit: "u" },
-        { key: "on", type: "boolean", label: "On", default: true },
-        { key: "kind", type: "select", label: "Kind", options: ["solid", "wire"], default: "solid" },
+        { type: "note", text: "Enter samples as $x,y$ pairs. Bad mid-edit strings fall back to the default path." },
+        { key: "points", type: "string", label: "Points", default: "0,0; 1,1; 2,0.5; 3,2", placeholder: "x,y; x,y; …" },
+        { key: "lift", type: "number", label: "Yaw", min: -45, max: 45, step: 1, default: 0, unit: "°" },
+        { key: "show_label", type: "boolean", label: "Count annotation", default: true },
+        { key: "layers", type: "multiselect", label: "Show", options: ["curve", "ends", "offset"], default: ["curve", "ends"] },
+        { type: "label", label: "Segment count", value: (q) => Math.max(0, String(q.points || "").split(";").filter((s) => s.trim()).length - 1) },
         {
-          type: "card", title: "Triangle A", // nested example; params stay flat (a_base, not triangle.a_base)
+          type: "card",
+          title: "Offset arrow (components)",
           children: [
-            { key: "a_base", type: "number", label: "Base", min: 0.5, max: 8, step: 0.1, default: 3, unit: "u" },
-            { key: "a_height", type: "number", label: "Height", min: 0.5, max: 8, step: 0.1, default: 2, unit: "u" },
-            { type: "label", label: "Color", value: "blue" },
-            // derived: recomputed when writables change (panel passes flat ctx.params)
-            { type: "label", label: "Area", value: (p) => (0.5 * p.a_base * p.a_height).toFixed(2) },
+            { type: "note", text: "Vectors = separate numbers, not one array field." },
+            { key: "off_x", type: "number", label: "x", min: -3, max: 3, step: 0.1, default: 1, unit: "u" },
+            { key: "off_y", type: "number", label: "y", min: -3, max: 3, step: 0.1, default: 0.5, unit: "u" },
+            { key: "off_z", type: "number", label: "z", min: -3, max: 3, step: 0.1, default: 0, unit: "u" },
+            { type: "label", label: "|offset|", value: (q) => Math.hypot(q.off_x ?? 0, q.off_y ?? 0, q.off_z ?? 0).toFixed(2) },
           ],
         },
       ],

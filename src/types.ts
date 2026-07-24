@@ -18,7 +18,26 @@ export interface SceneMetadata {
 }
 
 /** Writable control types — values land in flat `ctx.params[key]`. */
-export type WritableParamType = "number" | "boolean" | "select";
+export type WritableParamType =
+  | "number"
+  | "boolean"
+  | "select"
+  | "multiselect"
+  | "string";
+
+/** Exact allowed params() node types (CLI + skill). No aliases. */
+export const PARAM_NODE_TYPES = [
+  "card",
+  "note",
+  "label",
+  "number",
+  "boolean",
+  "select",
+  "multiselect",
+  "string",
+] as const;
+
+export type ParamNodeType = (typeof PARAM_NODE_TYPES)[number];
 
 export interface NumberParamField {
   type: "number";
@@ -47,15 +66,35 @@ export interface SelectParamField {
   default: string;
 }
 
+export interface MultiselectParamField {
+  type: "multiselect";
+  key: string;
+  label: string;
+  options: string[];
+  default: string[];
+}
+
+export interface StringParamField {
+  type: "string";
+  key: string;
+  label: string;
+  default: string;
+  /** In-input format hint (not a separate hint field). */
+  placeholder?: string;
+}
+
 export type WritableParamField =
   | NumberParamField
   | BooleanParamField
-  | SelectParamField;
+  | SelectParamField
+  | MultiselectParamField
+  | StringParamField;
 
 /** @deprecated Use WritableParamField — kept as alias during transition. */
 export type ParamField = WritableParamField;
 
-export type ParamValue = number | boolean | string;
+/** Flat bag values: scalars + multiselect string[]. */
+export type ParamValue = number | boolean | string | string[];
 
 export interface NoteParamNode {
   type: "note";

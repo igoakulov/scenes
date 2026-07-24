@@ -3,9 +3,12 @@ import { PanelRightIcon, PanelRightCloseIcon } from "lucide-react";
 import { SummaryPanel } from "./chrome/SummaryPanel";
 import { ExploreTools } from "./chrome/ExploreTools";
 import { LibraryPanel } from "./chrome/LibraryPanel";
+import { ParamsPanel } from "./chrome/params";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { loadScene, type LoadedScene } from "./runtime/loadScene";
+import type { ParamValue } from "./runtime/defaults";
 import {
   DEFAULT_GRID,
   SceneRuntime,
@@ -41,6 +44,7 @@ export function App() {
     readIdFromUrl() ? "summary" : "library",
   );
   const [loaded, setLoaded] = useState<LoadedScene | null>(null);
+  const [liveParams, setLiveParams] = useState<Record<string, ParamValue>>({});
   const [error, setError] = useState<string | null>(null);
   const [grid, setGrid] = useState<GridState>(() => {
     const id = readIdFromUrl();
@@ -98,6 +102,7 @@ export function App() {
     if (!sceneId) {
       rt.showEmpty();
       setLoaded(null);
+      setLiveParams({});
       setError(null);
       setLoading(false);
       document.title = "Scenes";
@@ -123,12 +128,14 @@ export function App() {
         rt.setGridState(next);
         rt.mountScene(scene);
         setLoaded(scene);
+        setLiveParams({ ...scene.params });
         document.title = `${scene.metadata.title} · Scenes`;
       } catch (err) {
         if (cancelled) return;
         const msg = err instanceof Error ? err.message : String(err);
         setError(msg);
         setLoaded(null);
+        setLiveParams({});
         rt.showEmpty();
       } finally {
         if (!cancelled) setLoading(false);
@@ -178,6 +185,64 @@ export function App() {
     url.searchParams.set("id", next);
     window.history.replaceState({}, "", url.pathname + url.search);
   }, []);
+
+  // UI bag updates immediately; scene remount is debounced (typing stays smooth).
+  const remountTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingParamsRef = useRef<Record<string, ParamValue> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (remountTimerRef.current) clearTimeout(remountTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Drop pending remount when scene changes.
+    if (remountTimerRef.current) clearTimeout(remountTimerRef.current);
+    remountTimerRef.current = null;
+    pendingParamsRef.current = null;
+  }, [sceneId, loaded?.id]);
+
+  const onParamChange = useCallback(
+    (key: string, value: ParamValue) => {
+      const rt = runtimeRef.current;
+      if (!loaded || !rt) return;
+
+      setLiveParams((prev) => {
+        let next: Record<string, ParamValue> = {
+          ...prev,
+          [key]: Array.isArray(value) ? [...value] : value,
+        };
+        if (typeof loaded.module.onParamsChange === "function") {
+          try {
+            next = loaded.module.onParamsChange(next, { key, value });
+          } catch (err) {
+            setError(
+              `onParamsChange threw: ${err instanceof Error ? err.message : String(err)}`,
+            );
+            return prev;
+          }
+        }
+
+        pendingParamsRef.current = next;
+        if (remountTimerRef.current) clearTimeout(remountTimerRef.current);
+        remountTimerRef.current = setTimeout(() => {
+          remountTimerRef.current = null;
+          const bag = pendingParamsRef.current;
+          if (!bag || !runtimeRef.current) return;
+          try {
+            runtimeRef.current.remountWithParams(loaded, bag);
+            setError(null);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+          }
+        }, 80);
+
+        return next;
+      });
+    },
+    [loaded],
+  );
 
   const onSheetTabChange = useCallback(
     (value: string | number | null) => {
@@ -245,26 +310,45 @@ export function App() {
             </Tabs>
           </header>
           <div className="sheet-body">
-            {sheetTab === "library" && (
-              <LibraryPanel onOpen={openScene} />
-            )}
-            {sheetTab === "summary" && hasScene && loaded && (
-              <SummaryPanel id={loaded.id} metadata={loaded.metadata} />
-            )}
-            {sheetTab === "summary" && hasScene && !loaded && loading && (
-              <p className="text-xs text-muted-foreground">Loading…</p>
-            )}
-            {sheetTab === "summary" && hasScene && !loaded && !loading && error && (
-              <p className="text-xs text-muted-foreground">Could not load scene.</p>
-            )}
-            {sheetTab === "explore" && hasScene && (
-              <ExploreTools
-                grid={grid}
-                dimensions={loaded?.metadata.dimensions ?? 3}
-                onGridChange={onGridChange}
-                onResetView={() => runtimeRef.current?.resetView()}
-              />
-            )}
+            <ScrollArea className="h-full">
+              <div className="px-3 py-3">
+                {sheetTab === "library" && (
+                  <LibraryPanel onOpen={openScene} />
+                )}
+                {sheetTab === "summary" && hasScene && loaded && (
+                  <SummaryPanel id={loaded.id} metadata={loaded.metadata} />
+                )}
+                {sheetTab === "summary" && hasScene && !loaded && loading && (
+                  <p className="text-xs text-muted-foreground">Loading…</p>
+                )}
+                {sheetTab === "summary" &&
+                  hasScene &&
+                  !loaded &&
+                  !loading &&
+                  error && (
+                    <p className="text-xs text-muted-foreground">
+                      Could not load scene.
+                    </p>
+                  )}
+                {sheetTab === "explore" && hasScene && (
+                  <div className="flex flex-col gap-3">
+                    <ExploreTools
+                      grid={grid}
+                      dimensions={loaded?.metadata.dimensions ?? 3}
+                      onGridChange={onGridChange}
+                      onResetView={() => runtimeRef.current?.resetView()}
+                    />
+                    {loaded && loaded.paramsTree.length > 0 && (
+                      <ParamsPanel
+                        tree={loaded.paramsTree}
+                        params={liveParams}
+                        onChange={onParamChange}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
           </div>
         </div>
       </aside>

@@ -190,4 +190,63 @@ describe("validateParamsTree", () => {
       "3.00",
     );
   });
+
+  it("accepts multiselect and string fields", () => {
+    const { writable, issues } = validateParamsTree(
+      [
+        {
+          key: "layers",
+          type: "multiselect",
+          label: "Show",
+          options: ["axes", "trail", "labels"],
+          default: ["axes", "trail"],
+        },
+        {
+          key: "points",
+          type: "string",
+          label: "Polyline (x,y pairs)",
+          default: "0,0; 1,1; 2,0.5",
+          placeholder: "x,y; x,y; …",
+        },
+      ],
+      "params",
+    );
+    assert.equal(issues.length, 0, JSON.stringify(issues));
+    assert.deepEqual(defaultsFromWritable(writable), {
+      layers: ["axes", "trail"],
+      points: "0,0; 1,1; 2,0.5",
+    });
+    assert.equal(writable?.[0].type, "multiselect");
+    assert.equal(writable?.[1].placeholder, "x,y; x,y; …");
+  });
+
+  it("rejects unknown param type with allowed list", () => {
+    const { issues } = validateParamsTree(
+      [{ type: "vector", key: "v", label: "V", default: [0, 0, 1] }],
+      "params",
+    );
+    assert.ok(issues.some((i) => i.path.endsWith(".type")));
+    assert.ok(
+      issues.some((i) =>
+        i.message.includes("multiselect") && i.message.includes("string"),
+      ),
+      JSON.stringify(issues),
+    );
+  });
+
+  it("rejects multiselect default not in options", () => {
+    const { issues } = validateParamsTree(
+      [
+        {
+          key: "layers",
+          type: "multiselect",
+          label: "Show",
+          options: ["a", "b"],
+          default: ["a", "z"],
+        },
+      ],
+      "params",
+    );
+    assert.ok(issues.some((i) => i.message.includes("must be in options")));
+  });
 });

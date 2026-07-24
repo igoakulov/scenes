@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { defaultsFromParamsTree, type ParamValue } from "./defaults";
+import { readParamsTree, type ParamsNode } from "./paramsTree";
 
 export interface SceneMetadata {
   title: string;
@@ -14,6 +15,8 @@ export interface LoadedScene {
   metadata: SceneMetadata;
   module: SceneModule;
   params: Record<string, ParamValue>;
+  /** Soft-parsed params() tree for Explore UI (unknown types skipped). */
+  paramsTree: ParamsNode[];
 }
 
 export interface SceneModule {
@@ -88,9 +91,12 @@ export async function loadScene(id: string): Promise<LoadedScene> {
   ]);
 
   let params: Record<string, ParamValue> = {};
+  let paramsTree: ParamsNode[] = [];
   if (typeof module.params === "function") {
     try {
-      params = defaultsFromParamsTree(module.params());
+      const raw = module.params();
+      params = defaultsFromParamsTree(raw);
+      paramsTree = readParamsTree(raw);
     } catch (err) {
       throw new Error(
         `params() threw: ${err instanceof Error ? err.message : String(err)}`,
@@ -98,5 +104,5 @@ export async function loadScene(id: string): Promise<LoadedScene> {
     }
   }
 
-  return { id, metadata, module, params };
+  return { id, metadata, module, params, paramsTree };
 }

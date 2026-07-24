@@ -106,7 +106,7 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
                 title={label}
                 className={cn(
                   // Density matches base-mira DropdownMenuItem / SidebarMenu sm: text-xs, min-h-7.
-                  "flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-left text-xs/relaxed",
+                  "flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-xs/relaxed",
                   "text-foreground hover:bg-muted",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 )}

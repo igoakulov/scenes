@@ -130,11 +130,29 @@ export class SceneRuntime {
     this.dimensions = loaded.metadata.dimensions;
     this.applyCameraMode(this.dimensions);
     this.resetView();
+    this.runSetup(loaded, loaded.params);
+  }
 
+  /**
+   * Re-run setup after param edits. Keeps camera, controls, Grid, lights.
+   * Does not reset view.
+   */
+  remountWithParams(
+    loaded: LoadedScene,
+    params: LoadedScene["params"],
+  ): void {
+    this.clearScene();
+    this.runSetup(loaded, params);
+  }
+
+  private runSetup(
+    loaded: LoadedScene,
+    params: LoadedScene["params"],
+  ): void {
     try {
       loaded.module.setup({
         root: this.root,
-        params: { ...loaded.params },
+        params: { ...params },
         baseUrl: sceneBaseUrlAbsolute(loaded.id),
       });
     } catch (err) {
@@ -142,7 +160,6 @@ export class SceneRuntime {
         `setup() threw: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
-
     this.annotations = discoverAnnotations(this.root);
   }
 

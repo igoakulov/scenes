@@ -56,6 +56,8 @@ export class GridController {
 
   constructor() {
     this.group.name = "__scenes_grid__";
+    // Draw before scene content; materials use LessDepth so coplanar scene wins.
+    this.group.renderOrder = -1;
     this.rebuild();
   }
 
@@ -115,20 +117,24 @@ function makeGridPlane(
   const divisions = Math.max(1, Math.round(full / step));
   const grid = new THREE.GridHelper(full, divisions, GRID_COLOR, GRID_COLOR);
   if (Array.isArray(grid.material)) {
-    for (const m of grid.material) {
-      m.transparent = true;
-      m.opacity = 0.22;
-      m.depthWrite = false;
-    }
+    for (const m of grid.material) styleRefMaterial(m, 0.22);
   } else {
-    grid.material.transparent = true;
-    grid.material.opacity = 0.22;
-    grid.material.depthWrite = false;
+    styleRefMaterial(grid.material, 0.22);
   }
   if (plane === "xy") grid.rotation.x = Math.PI / 2;
   else if (plane === "yz") grid.rotation.z = Math.PI / 2;
   grid.name = `__grid_${plane}__`;
+  grid.renderOrder = -1;
   return grid;
+}
+
+/** Scene wins when coplanar: LessDepth fails at equal depth (default LessEqual lets axes repaint over). */
+function styleRefMaterial(m: THREE.Material, opacity: number): void {
+  m.transparent = true;
+  m.opacity = opacity;
+  m.depthWrite = false;
+  m.depthTest = true;
+  m.depthFunc = THREE.LessDepth;
 }
 
 function makeAxes(
@@ -145,17 +151,11 @@ function makeAxes(
     const pos = dir.clone().multiplyScalar(len);
     const neg = dir.clone().multiplyScalar(-len);
     const geo = new THREE.BufferGeometry().setFromPoints([neg, pos]);
-    g.add(
-      new THREE.Line(
-        geo,
-        new THREE.LineBasicMaterial({
-          color: AXIS_COLOR,
-          transparent: true,
-          opacity: 0.75,
-          depthWrite: false,
-        }),
-      ),
-    );
+    const lineMat = new THREE.LineBasicMaterial({ color: AXIS_COLOR });
+    styleRefMaterial(lineMat, 0.75);
+    const axisLine = new THREE.Line(geo, lineMat);
+    axisLine.renderOrder = -1;
+    g.add(axisLine);
 
     // Arrow + label on the positive end only
     const arrow = new THREE.ArrowHelper(
@@ -166,10 +166,9 @@ function makeAxes(
       arrowLen * 0.55,
       arrowLen * 0.35,
     );
-    arrow.line.material.transparent = true;
-    (arrow.line.material as THREE.Material).opacity = 0.85;
-    arrow.cone.material.transparent = true;
-    (arrow.cone.material as THREE.Material).opacity = 0.85;
+    styleRefMaterial(arrow.line.material as THREE.Material, 0.85);
+    styleRefMaterial(arrow.cone.material as THREE.Material, 0.85);
+    arrow.renderOrder = -1;
     g.add(arrow);
 
     const el = document.createElement("div");

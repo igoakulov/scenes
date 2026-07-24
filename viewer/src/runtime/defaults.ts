@@ -1,6 +1,7 @@
-export type ParamValue = number | boolean | string;
+/** Flat bag values (mirrors CLI ParamValue). */
+export type ParamValue = number | boolean | string | string[];
 
-/** Flat defaults from a params() tree (writable fields only). */
+/** Flat defaults from a params() tree (known writable fields only; skip unknowns). */
 export function defaultsFromParamsTree(
   raw: unknown,
 ): Record<string, ParamValue> {
@@ -23,12 +24,25 @@ function walk(node: unknown, out: Record<string, ParamValue>): void {
     return;
   }
 
-  if (
-    (type === "number" || type === "boolean" || type === "select") &&
-    typeof o.key === "string" &&
-    o.key.length > 0 &&
-    o.default !== undefined
-  ) {
-    out[o.key] = o.default as ParamValue;
+  if (typeof o.key !== "string" || o.key.length === 0) return;
+
+  if (type === "number" && typeof o.default === "number") {
+    out[o.key] = o.default;
+    return;
+  }
+  if (type === "boolean" && typeof o.default === "boolean") {
+    out[o.key] = o.default;
+    return;
+  }
+  if (type === "select" && typeof o.default === "string") {
+    out[o.key] = o.default;
+    return;
+  }
+  if (type === "multiselect" && Array.isArray(o.default)) {
+    out[o.key] = o.default.filter((x): x is string => typeof x === "string");
+    return;
+  }
+  if (type === "string" && typeof o.default === "string") {
+    out[o.key] = o.default;
   }
 }
