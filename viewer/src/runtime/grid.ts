@@ -20,6 +20,30 @@ export const DEFAULT_GRID: GridState = {
   showYZ: false,
 };
 
+/**
+ * 2D: only the XY plane is meaningful (UI label "Floor (XY)").
+ * Clears Floor (XZ) / YZ. If the classic 3D default (floor on, XY off) is
+ * present, map it to Floor (XY) on so the grid stays visible.
+ */
+export function gridForDimensions(
+  grid: GridState,
+  dimensions: 2 | 3,
+): GridState {
+  if (dimensions === 2) {
+    let showXY = grid.showXY;
+    if (!showXY && grid.showFloor && !grid.showYZ) {
+      showXY = true;
+    }
+    return {
+      ...grid,
+      showFloor: false,
+      showXY,
+      showYZ: false,
+    };
+  }
+  return grid;
+}
+
 const GRID_COLOR = 0xaab2bd;
 const AXIS_COLOR = 0xe6e8eb;
 

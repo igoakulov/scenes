@@ -3,12 +3,18 @@ import { join } from "node:path";
 import { requireWorkspace } from "../config.js";
 import { printHint, printSceneBlock, printWorkspace } from "../print.js";
 import { parseMetadata } from "../validate/metadata.js";
-import { listSceneIds, sceneDir } from "../workspace.js";
+import { hasScenesDir, listSceneIds, sceneDir } from "../workspace.js";
 
 /** id → title (or ERR). Tags/dimensions: read metadata.json when needed. */
 export async function cmdList(): Promise<number> {
   const workspace = await requireWorkspace();
   printWorkspace(workspace);
+
+  if (!(await hasScenesDir(workspace))) {
+    // Not the same as empty scenes/ — layout missing (wrong path or never inited).
+    printHint("no scenes/ under workspace — check path or: scenes init");
+    return 0;
+  }
 
   const ids = await listSceneIds(workspace);
   if (ids.length === 0) {

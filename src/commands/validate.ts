@@ -2,11 +2,12 @@ import { requireWorkspace } from "../config.js";
 import {
   formatIssueLines,
   printFail,
+  printHint,
   printSceneBlock,
   printWorkspace,
 } from "../print.js";
 import { validateScene } from "../validate/scene.js";
-import { listSceneIds, sceneExists } from "../workspace.js";
+import { hasScenesDir, listSceneIds, sceneExists } from "../workspace.js";
 
 export async function cmdValidate(id: string | undefined): Promise<number> {
   const workspace = await requireWorkspace();
@@ -20,6 +21,10 @@ export async function cmdValidate(id: string | undefined): Promise<number> {
     }
     ids = [id];
   } else {
+    if (!(await hasScenesDir(workspace))) {
+      printHint("no scenes/ under workspace — check path or: scenes init");
+      return 0;
+    }
     ids = await listSceneIds(workspace);
     if (ids.length === 0) {
       return 0;

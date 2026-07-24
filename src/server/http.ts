@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { dirname, extname, join, normalize, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { pipeline } from "node:stream/promises";
+import { listSceneEntries } from "../catalog.js";
 
 const require = createRequire(import.meta.url);
 
@@ -213,6 +214,22 @@ async function handleRequest(
     let pathname = u.pathname;
     if (pathname !== "/" && pathname.endsWith("/")) {
       pathname = pathname.slice(0, -1);
+    }
+
+    // Library catalog for the viewer (metadata titles only; no scene.js).
+    if (pathname === "/api/scenes") {
+      const entries = await listSceneEntries(ctx.workspace);
+      const body = JSON.stringify(entries);
+      setCommonHeaders(res);
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      if (req.method === "HEAD") {
+        res.setHeader("Content-Length", String(Buffer.byteLength(body)));
+        res.end();
+        return;
+      }
+      res.end(body);
+      return;
     }
 
     // Workspace scene files: /ws/scenes/<id>/...

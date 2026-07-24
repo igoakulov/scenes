@@ -91,8 +91,8 @@ describe("show", () => {
     await rm(configDir, { recursive: true, force: true });
   });
 
-  /** One HTTP smoke: listen + viewer shell + one workspace asset. No route matrix. */
-  it("listens and serves viewer + scene file", async () => {
+  /** One HTTP smoke: listen + viewer shell + scene file + library API. */
+  it("listens and serves viewer + scene file + /api/scenes", async () => {
     const workspace = await mkdtemp(join(tmpdir(), "scenes-ws-"));
     const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
     const port = 19000 + Math.floor(Math.random() * 1000);
@@ -106,6 +106,11 @@ describe("show", () => {
     await cp(join(fixtures, "valid-basic"), join(workspace, "scenes", "demo"), {
       recursive: true,
     });
+    await cp(
+      join(fixtures, "invalid-metadata"),
+      join(workspace, "scenes", "bad-meta"),
+      { recursive: true },
+    );
 
     let listenUrl = "";
     const rPromise = runScenes(["show", "demo"], env, {
@@ -125,6 +130,19 @@ describe("show", () => {
               );
               assert.equal(sceneJs.status, 200);
               assert.match(sceneJs.body, /export function setup/);
+
+              const catalog = await httpGet(
+                `http://127.0.0.1:${port}/api/scenes`,
+              );
+              assert.equal(catalog.status, 200);
+              const entries = JSON.parse(catalog.body);
+              assert.ok(Array.isArray(entries));
+              const byId = Object.fromEntries(
+                entries.map((e) => [e.id, e]),
+              );
+              assert.equal(byId.demo?.title, "Valid basic");
+              assert.equal(byId["bad-meta"]?.id, "bad-meta");
+              assert.equal(byId["bad-meta"]?.title, undefined);
             } finally {
               child.kill("SIGTERM");
             }

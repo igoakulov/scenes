@@ -14,15 +14,28 @@ import { cn } from "@/lib/utils";
 
 interface Props {
   grid: GridState;
+  /** Scene camera stack — filters which grid planes appear in the menu. */
+  dimensions: 2 | 3;
   onGridChange: (partial: Partial<GridState>) => void;
   onResetView: () => void;
 }
 
-const PLANE_OPTIONS = [
-  { key: "showFloor" as const, label: "Floor (XZ)" },
-  { key: "showXY" as const, label: "XY" },
-  { key: "showYZ" as const, label: "YZ" },
+type PlaneKey = "showFloor" | "showXY" | "showYZ";
+
+const PLANES_3D: { key: PlaneKey; label: string }[] = [
+  { key: "showFloor", label: "Floor (XZ)" },
+  { key: "showXY", label: "XY" },
+  { key: "showYZ", label: "YZ" },
 ];
+
+/** 2D face-on: single plane, labeled Floor (XY). */
+const PLANES_2D: { key: PlaneKey; label: string }[] = [
+  { key: "showXY", label: "Floor (XY)" },
+];
+
+function planeOptions(dimensions: 2 | 3) {
+  return dimensions === 2 ? PLANES_2D : PLANES_3D;
+}
 
 /** Compact number field: allow empty while focused; silent snap on blur. */
 function DraftNumber({
@@ -96,20 +109,26 @@ function DraftNumber({
   );
 }
 
-export function ExploreTools({ grid, onGridChange, onResetView }: Props) {
-  const selectedLabels = PLANE_OPTIONS.filter((o) => grid[o.key]).map(
-    (o) => o.label,
-  );
+export function ExploreTools({
+  grid,
+  dimensions,
+  onGridChange,
+  onResetView,
+}: Props) {
+  const options = planeOptions(dimensions);
+  const selectedLabels = options.filter((o) => grid[o.key]).map((o) => o.label);
+  const allOn =
+    options.length > 0 && options.every((o) => grid[o.key]);
   const summary =
     selectedLabels.length === 0
       ? "None"
-      : selectedLabels.length === 3
+      : allOn && options.length > 1
         ? "All planes"
         : selectedLabels.join(", ");
 
   return (
     <div className="flex flex-col gap-3">
-      {/* ~320px sheet body: Grid ~52% · Size ~22% · Step ~22% (+ gaps) */}
+      {/* Grid · Size · Step — plane list filtered by dimensions */}
       <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,0.55fr)_minmax(0,0.55fr)] items-end gap-2">
         <div className="flex min-w-0 flex-col gap-1">
           <span className="text-[11px] font-medium text-muted-foreground">
@@ -126,11 +145,13 @@ export function ExploreTools({ grid, onGridChange, onResetView }: Props) {
                 />
               }
             >
-              <span className="truncate">{summary}</span>
+              <span className="min-w-0 truncate" title={summary}>
+                {summary}
+              </span>
               <ChevronDownIcon data-icon="inline-end" />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="min-w-44">
-              {PLANE_OPTIONS.map((o) => (
+              {options.map((o) => (
                 <DropdownMenuCheckboxItem
                   key={o.key}
                   checked={grid[o.key]}

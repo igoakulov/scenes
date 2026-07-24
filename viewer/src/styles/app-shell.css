@@ -110,82 +110,9 @@ body,
   align-items: center;
   gap: 2px;
   height: 40px;
-  /* Room for the floating panel toggle overlaid at top-right */
-  padding: 0 40px 0 4px;
+  /* Left inset matches vertical air around header controls; right: panel toggle */
+  padding: 0 40px 0 6px;
   background: var(--card);
-}
-
-.sheet-title {
-  display: flex;
-  align-items: center;
-  padding: 0 8px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* Muted chevron back — no Library label, no button chrome */
-.sheet-back {
-  appearance: none;
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  border-radius: calc(var(--radius) - 2px);
-  background: transparent;
-  color: var(--muted-foreground);
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.sheet-back:hover {
-  color: var(--foreground);
-  background: var(--muted);
-}
-
-.sheet-tabs {
-  display: flex;
-  flex: 1 1 auto;
-  min-width: 0;
-  align-items: center;
-  gap: 2px;
-}
-
-/* Pre-option-C: ghost-style tabs (no underline, no header separator) */
-.sheet-tab {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 28px;
-  margin: 0;
-  padding: 0 10px;
-  border: none;
-  border-radius: calc(var(--radius) - 2px);
-  background: transparent;
-  color: var(--muted-foreground);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.sheet-tab:hover {
-  color: var(--foreground);
-  background: var(--muted);
-}
-
-.sheet-tab-active {
-  color: var(--foreground);
-  background: var(--muted);
-  font-weight: 600;
 }
 
 .sheet-body {

@@ -20,7 +20,20 @@ export async function ensureWorkspaceLayout(workspace: string): Promise<void> {
   await mkdir(scenesDir(workspace), { recursive: true });
 }
 
-/** Immediate child directories of scenes/ (candidate scene ids). */
+/** True when workspace has a `scenes/` directory (may be empty). */
+export async function hasScenesDir(workspace: string): Promise<boolean> {
+  try {
+    const s = await stat(scenesDir(workspace));
+    return s.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Immediate child directories of scenes/ (candidate scene ids).
+ * Missing scenes/ → [] (callers that care about layout use hasScenesDir).
+ */
 export async function listSceneIds(workspace: string): Promise<string[]> {
   const dir = scenesDir(workspace);
   let entries;
@@ -29,9 +42,7 @@ export async function listSceneIds(workspace: string): Promise<string[]> {
   } catch (err) {
     const e = err as NodeJS.ErrnoException;
     if (e.code === "ENOENT") {
-      throw new Error(
-        `missing scenes/: ${dir}\nrun: scenes init`,
-      );
+      return [];
     }
     throw err;
   }

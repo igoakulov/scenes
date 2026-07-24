@@ -1,23 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ChevronLeftIcon,
-  PanelRightIcon,
-  PanelRightCloseIcon,
-} from "lucide-react";
+import { PanelRightIcon, PanelRightCloseIcon } from "lucide-react";
 import { SummaryPanel } from "./chrome/SummaryPanel";
 import { ExploreTools } from "./chrome/ExploreTools";
 import { LibraryPanel } from "./chrome/LibraryPanel";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { loadScene, type LoadedScene } from "./runtime/loadScene";
 import {
   DEFAULT_GRID,
   SceneRuntime,
   type GridState,
 } from "./runtime/SceneRuntime";
+import { gridForDimensions } from "./runtime/grid";
 import { cn } from "@/lib/utils";
 
-type DrawerMode = "library" | "scene";
-type SceneTab = "summary" | "explore";
+/** Sheet body tab — always all three; Summary/Explore need a selected scene. */
+type SheetTab = "library" | "summary" | "explore";
 
 function readIdFromUrl(): string | null {
   const id = new URLSearchParams(window.location.search).get("id");
@@ -25,12 +23,12 @@ function readIdFromUrl(): string | null {
   return id.trim();
 }
 
-/** Session-only Grid prefs keyed by scene id (and library shell). */
+/** Session-only Grid prefs keyed by scene id (and no-selection shell). */
 const gridByKey = new Map<string, GridState>();
-const LIBRARY_KEY = "__library__";
+const NO_SCENE_KEY = "__none__";
 
 function gridKey(sceneId: string | null): string {
-  return sceneId ?? LIBRARY_KEY;
+  return sceneId ?? NO_SCENE_KEY;
 }
 
 export function App() {
@@ -38,11 +36,10 @@ export function App() {
   const runtimeRef = useRef<SceneRuntime | null>(null);
 
   const [sheetOpen, setSheetOpen] = useState(true);
-  const [mode, setMode] = useState<DrawerMode>(() =>
-    readIdFromUrl() ? "scene" : "library",
-  );
   const [sceneId, setSceneId] = useState<string | null>(() => readIdFromUrl());
-  const [sceneTab, setSceneTab] = useState<SceneTab>("summary");
+  const [sheetTab, setSheetTab] = useState<SheetTab>(() =>
+    readIdFromUrl() ? "summary" : "library",
+  );
   const [loaded, setLoaded] = useState<LoadedScene | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [grid, setGrid] = useState<GridState>(() => {
@@ -50,6 +47,8 @@ export function App() {
     return gridByKey.get(gridKey(id)) ?? { ...DEFAULT_GRID };
   });
   const [loading, setLoading] = useState(false);
+
+  const hasScene = sceneId != null;
 
   useEffect(() => {
     const host = canvasHostRef.current;
@@ -91,16 +90,18 @@ export function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Load / unload canvas from selection only — sheet tab does not clear selection.
   useEffect(() => {
     const rt = runtimeRef.current;
     if (!rt) return;
 
-    if (!sceneId || mode === "library") {
+    if (!sceneId) {
       rt.showEmpty();
       setLoaded(null);
       setError(null);
+      setLoading(false);
       document.title = "Scenes";
-      const saved = gridByKey.get(LIBRARY_KEY) ?? { ...DEFAULT_GRID };
+      const saved = gridByKey.get(NO_SCENE_KEY) ?? { ...DEFAULT_GRID };
       setGrid(saved);
       rt.setGridState(saved);
       return;
@@ -109,16 +110,17 @@ export function App() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    setSceneTab("summary");
-
-    const saved = gridByKey.get(sceneId) ?? { ...DEFAULT_GRID };
-    setGrid(saved);
-    rt.setGridState(saved);
 
     void (async () => {
       try {
         const scene = await loadScene(sceneId);
         if (cancelled) return;
+        const dim = scene.metadata.dimensions;
+        const saved = gridByKey.get(sceneId) ?? { ...DEFAULT_GRID };
+        const next = gridForDimensions(saved, dim);
+        gridByKey.set(sceneId, next);
+        setGrid(next);
+        rt.setGridState(next);
         rt.mountScene(scene);
         setLoaded(scene);
         document.title = `${scene.metadata.title} · Scenes`;
@@ -136,12 +138,20 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [sceneId, mode]);
+  }, [sceneId]);
+
+  // If selection is cleared while on a scene tab, land on Library.
+  useEffect(() => {
+    if (!hasScene && sheetTab !== "library") {
+      setSheetTab("library");
+    }
+  }, [hasScene, sheetTab]);
 
   const onGridChange = useCallback(
     (partial: Partial<GridState>) => {
       setGrid((prev) => {
-        const next: GridState = {
+        const dim = loaded?.metadata.dimensions ?? 3;
+        const merged: GridState = {
           ...prev,
           ...partial,
           step: Math.max(0.01, partial.step ?? prev.step),
@@ -150,22 +160,37 @@ export function App() {
           showXY: partial.showXY ?? prev.showXY,
           showYZ: partial.showYZ ?? prev.showYZ,
         };
+        const next = gridForDimensions(merged, dim);
         runtimeRef.current?.setGridState(next);
-        gridByKey.set(gridKey(mode === "library" ? null : sceneId), next);
+        gridByKey.set(gridKey(sceneId), next);
         return next;
       });
     },
-    [sceneId, mode],
+    [sceneId, loaded?.metadata.dimensions],
   );
 
-  const goLibrary = () => {
-    setMode("library");
-    setSceneId(null);
+  const openScene = useCallback((id: string) => {
+    const next = id.trim();
+    if (!next) return;
+    setSceneId(next);
+    setSheetTab("summary");
     const url = new URL(window.location.href);
-    url.searchParams.delete("id");
+    url.searchParams.set("id", next);
     window.history.replaceState({}, "", url.pathname + url.search);
-    document.title = "Scenes";
-  };
+  }, []);
+
+  const onSheetTabChange = useCallback(
+    (value: string | number | null) => {
+      if (value === "library") {
+        setSheetTab("library");
+        return;
+      }
+      if ((value === "summary" || value === "explore") && sceneId) {
+        setSheetTab(value);
+      }
+    },
+    [sceneId],
+  );
 
   const toggleSheet = () => setSheetOpen((o) => !o);
 
@@ -186,8 +211,6 @@ export function App() {
     </Button>
   );
 
-  const isLibrary = mode === "library" || !sceneId;
-
   return (
     <div className="app-shell">
       {/* Single stable control — never remounts between open/closed (avoids flash). */}
@@ -204,71 +227,45 @@ export function App() {
         aria-hidden={!sheetOpen}
       >
         <div className="sheet-inner">
-          {isLibrary ? (
-            <>
-              <header className="sheet-header">
-                <span className="sheet-title">Library</span>
-              </header>
-              <div className="sheet-body">
-                <LibraryPanel />
-              </div>
-            </>
-          ) : (
-            <>
-              <header className="sheet-header">
-                <button
-                  type="button"
-                  className="sheet-back"
-                  title="Back to library"
-                  aria-label="Back to library"
-                  onClick={goLibrary}
-                >
-                  <ChevronLeftIcon className="size-4" />
-                </button>
-                <div className="sheet-tabs" role="tablist">
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={sceneTab === "summary"}
-                    className={cn(
-                      "sheet-tab",
-                      sceneTab === "summary" && "sheet-tab-active",
-                    )}
-                    onClick={() => setSceneTab("summary")}
-                  >
-                    Summary
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={sceneTab === "explore"}
-                    className={cn(
-                      "sheet-tab",
-                      sceneTab === "explore" && "sheet-tab-active",
-                    )}
-                    onClick={() => setSceneTab("explore")}
-                  >
-                    Explore
-                  </button>
-                </div>
-              </header>
-              <div className="sheet-body">
-                {sceneTab === "summary" && loaded && (
-                  <SummaryPanel metadata={loaded.metadata} />
-                )}
-                {sceneTab === "summary" && !loaded && loading && (
-                  <p className="text-xs text-muted-foreground">Loading…</p>
-                )}
-                {sceneTab === "explore" && (
-                  <ExploreTools
-                    grid={grid}
-                    onGridChange={onGridChange}
-                    onResetView={() => runtimeRef.current?.resetView()}
-                  />
-                )}
-              </div>
-            </>
-          )}
+          <header className="sheet-header">
+            <Tabs
+              value={sheetTab}
+              onValueChange={onSheetTabChange}
+              className="min-w-0"
+            >
+              <TabsList>
+                <TabsTrigger value="library">Library</TabsTrigger>
+                <TabsTrigger value="summary" disabled={!hasScene}>
+                  Summary
+                </TabsTrigger>
+                <TabsTrigger value="explore" disabled={!hasScene}>
+                  Explore
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </header>
+          <div className="sheet-body">
+            {sheetTab === "library" && (
+              <LibraryPanel onOpen={openScene} />
+            )}
+            {sheetTab === "summary" && hasScene && loaded && (
+              <SummaryPanel id={loaded.id} metadata={loaded.metadata} />
+            )}
+            {sheetTab === "summary" && hasScene && !loaded && loading && (
+              <p className="text-xs text-muted-foreground">Loading…</p>
+            )}
+            {sheetTab === "summary" && hasScene && !loaded && !loading && error && (
+              <p className="text-xs text-muted-foreground">Could not load scene.</p>
+            )}
+            {sheetTab === "explore" && hasScene && (
+              <ExploreTools
+                grid={grid}
+                dimensions={loaded?.metadata.dimensions ?? 3}
+                onGridChange={onGridChange}
+                onResetView={() => runtimeRef.current?.resetView()}
+              />
+            )}
+          </div>
         </div>
       </aside>
     </div>
