@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { join } from "node:path";
 import type { SceneValidationResult, ValidationIssue } from "../types.js";
-import { isKebabCaseId, sceneDir } from "../workspace.js";
+import { isSceneId, sceneDir } from "../workspace.js";
 import { parseMetadata } from "./metadata.js";
 import {
   defaultsFromWritable,
@@ -17,10 +17,10 @@ export async function validateScene(
   const issues: ValidationIssue[] = [];
   const dir = sceneDir(workspace, id);
 
-  if (!isKebabCaseId(id)) {
+  if (!isSceneId(id)) {
     issues.push({
       path: "id",
-      message: "want kebab-case (e.g. my-scene)",
+      message: "want kebab-case (e.g. my-scene) or hidden .my-scene",
     });
   }
 

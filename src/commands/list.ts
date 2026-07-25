@@ -16,6 +16,7 @@ export async function cmdList(): Promise<number> {
     return 0;
   }
 
+  // Full discovery (incl. `.my-scene`); viewer Library uses { library: true }.
   const ids = await listSceneIds(workspace);
   if (ids.length === 0) {
     return 0;

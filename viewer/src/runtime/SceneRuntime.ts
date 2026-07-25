@@ -16,6 +16,11 @@ import {
   type LoadedScene,
   type SceneMetadata,
 } from "./loadScene";
+import {
+  rootHasAgentLight,
+  stripOriginReferenceHelpers,
+  takeAgentStartCamera,
+} from "./sceneOwnership";
 
 /** Match shadcn dark --background (zinc). */
 const BG = 0x18181b;
@@ -34,6 +39,8 @@ export class SceneRuntime {
   private camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
   private controls: OrbitControls;
   private grid: GridController;
+  /** Runtime default lights — disabled when setup adds any Light under root. */
+  private defaultLights: THREE.Light[] = [];
   private raf = 0;
   private disposed = false;
   private annotations: AnnotationHandle[] = [];
@@ -71,13 +78,13 @@ export class SceneRuntime {
     this.root.name = "scene-root";
     this.scene.add(this.root);
 
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    const ambient = new THREE.AmbientLight(0xffffff, 0.55);
     const key = new THREE.DirectionalLight(0xffffff, 0.85);
     key.position.set(6, 10, 8);
-    this.scene.add(key);
     const fill = new THREE.DirectionalLight(0xffffff, 0.28);
     fill.position.set(-6, 4, -8);
-    this.scene.add(fill);
+    this.defaultLights = [ambient, key, fill];
+    for (const light of this.defaultLights) this.scene.add(light);
 
     this.grid = new GridController();
     this.scene.add(this.grid.group);
@@ -130,24 +137,25 @@ export class SceneRuntime {
     this.dimensions = loaded.metadata.dimensions;
     this.applyCameraMode(this.dimensions);
     this.resetView();
-    this.runSetup(loaded, loaded.params);
+    this.runSetup(loaded, loaded.params, { adoptStartCamera: true });
   }
 
   /**
-   * Re-run setup after param edits. Keeps camera, controls, Grid, lights.
-   * Does not reset view.
+   * Re-run setup after param edits. Keeps camera, controls, Grid.
+   * Re-applies light defaults vs agent lights; does not reset view.
    */
   remountWithParams(
     loaded: LoadedScene,
     params: LoadedScene["params"],
   ): void {
     this.clearScene();
-    this.runSetup(loaded, params);
+    this.runSetup(loaded, params, { adoptStartCamera: false });
   }
 
   private runSetup(
     loaded: LoadedScene,
     params: LoadedScene["params"],
+    opts: { adoptStartCamera: boolean },
   ): void {
     try {
       loaded.module.setup({
@@ -160,12 +168,40 @@ export class SceneRuntime {
         `setup() threw: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
+    this.applyDefaultLightsPolicy();
+    stripOriginReferenceHelpers(this.root);
+    if (opts.adoptStartCamera) {
+      this.adoptStartCameraFromRoot();
+    }
     this.annotations = discoverAnnotations(this.root);
   }
 
-  /** No scene content — Grid remains (runtime-owned). */
+  /** Default lights on when setup adds no Light under root. */
+  private applyDefaultLightsPolicy(): void {
+    const agentLit = rootHasAgentLight(this.root);
+    for (const light of this.defaultLights) {
+      light.visible = !agentLit;
+    }
+  }
+
+  /**
+   * Optional agent Camera under root → initial pose only; removed after copy.
+   * Projection / orbit|pan-zoom stay runtime-owned.
+   */
+  private adoptStartCameraFromRoot(): void {
+    const view = takeAgentStartCamera(this.root);
+    if (!view) return;
+    this.defaultCamPos.copy(view.position);
+    this.defaultTarget.copy(view.target);
+    this.camera.position.copy(view.position);
+    this.controls.target.copy(view.target);
+    this.controls.update();
+  }
+
+  /** No scene content — Grid + default lights remain (runtime-owned). */
   showEmpty(): void {
     this.clearScene();
+    for (const light of this.defaultLights) light.visible = true;
     this.applyCameraMode(3);
     this.resetView();
   }

@@ -65,6 +65,13 @@ describe("CLI", () => {
     await cp(join(fixtures, "valid-basic"), join(workspace, "scenes", "demo"), {
       recursive: true,
     });
+    // Hidden backup: CLI list/validate must see it; .git junk must not appear.
+    await cp(
+      join(fixtures, "valid-basic"),
+      join(workspace, "scenes", ".demo-bak"),
+      { recursive: true },
+    );
+    await mkdir(join(workspace, "scenes", ".git"), { recursive: true });
 
     // list must not import scene.js
     const bombDir = join(workspace, "scenes", "bomb");
@@ -85,9 +92,14 @@ describe("CLI", () => {
     r = await runScenes(["list"], env);
     assert.equal(r.code, 0, r.stderr + r.stdout);
     assert.match(r.stdout, /@ scenes\/demo/);
+    assert.match(r.stdout, /@ scenes\/\.demo-bak/);
     assert.match(r.stdout, /@ scenes\/bomb/);
+    assert.doesNotMatch(r.stdout, /@ scenes\/\.git/);
 
     r = await runScenes(["validate", "demo"], env);
+    assert.equal(r.code, 0, r.stderr + r.stdout);
+
+    r = await runScenes(["validate", ".demo-bak"], env);
     assert.equal(r.code, 0, r.stderr + r.stdout);
 
     r = await runScenes(["validate", "bomb"], env);

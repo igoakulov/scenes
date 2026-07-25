@@ -16,6 +16,7 @@ cmds:
   help
 
 layout: <workspace>/scenes/<id>/{metadata.json,scene.js,assets?/}
+  id: kebab-case; leading . = hidden from viewer Library only (CLI list/validate/show still work)
 config: ~/.config/scenes/config.json  (win: %APPDATA%\\scenes\\)
 meta: title, description, tags[]; optional dimensions 2|3 (default 3)
 

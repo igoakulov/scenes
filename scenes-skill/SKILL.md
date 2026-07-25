@@ -8,7 +8,7 @@ description: >-
 
 # Scenes
 
-Plain Three.js scene folders + `scenes` CLI + local viewer. You write content; runtime owns camera, lights, Grid, sheet chrome, Explore cards, annotation chips.
+Plain Three.js scene folders + `scenes` CLI + local viewer. Content under `ctx.root`; runtime owns interaction chrome and defaults (below).
 
 ## Install
 
@@ -22,13 +22,19 @@ scenes init [path]             # once per machine/workspace; omit path → cwd
 
 ## Authoring guidelines
 
-Unless the human states otherwise:
+Style (unless the human states otherwise):
 
 - Simple educational topics (calculus, vectors, geometry, graphs, basic solids): CLEAN, LIGHTWEIGHT, LOW-FI — clear meshes, few objects, readable annotations.
 - Showcases / model capability demos: MAX EFFORT — higher fidelity, careful composition, strong Summary + cards.
-- NO ANIMATION — static `setup` only; no `requestAnimationFrame`, no `update`, no tween loops.
-- NO custom lights / Grid / axes unless required — runtime provides ambient + directional lights and Grid.
-- NO own camera controls — runtime orbit (3D) / pan-zoom (2D). Frame content for DEFAULT VIEW ~`(6, 4, 8)` → origin (3D); face-on XY when `dimensions: 2`. Primary content near origin, modest unit scale.
+- Prefer primary content near origin, modest unit scale.
+
+Runtime provides (product rules; parent under `ctx.root` with normal three.js where OVERRIDE OK):
+
+- LIGHTS (OVERRIDE OK) — ambient + directional defaults; any `THREE.Light` under `ctx.root` REPLACES them (showcases). No lights → defaults stay.
+- GRID (NEVER ADD origin XY/XZ/YZ) — runtime planes through origin (Explore: planes, size, step). Origin-aligned `GridHelper` / `AxesHelper` stripped. Diagonal or off-origin guides OK.
+- CAMERA / CONTROLS (OVERRIDE OK start pose only) — `dimensions` 3 → perspective FOV 55° + orbit; 2 → ortho + pan/zoom. Default view ~`(6,4,8)` → origin (3); face-on XY (2). Explore remounts `setup` but KEEPS camera. Optional `THREE.Camera` under `ctx.root` on load: copies position + look, removes it; FOV/near/far/projection ignored; `dimensions` still required. NEVER ADD `OrbitControls` / own control or rAF loops.
+- CHROME (NEVER ADD custom labels) — sheet (Library / Summary / Explore); Explore from `params()`; only `userData.annotation` chips (KaTeX `$…$` / `$$…$$` ok).
+- ANIMATION (NEVER ADD) — static `setup` only; no `requestAnimationFrame` / `update` / tweens.
 
 ## Workspace
 
@@ -42,7 +48,13 @@ Unless the human states otherwise:
   assets/                # optional
 ```
 
-Create scene folders with file tools — there is no `scenes new`.
+- `id` = kebab-case folder name (`my-scene`); optional leading `.` (see Versioning and backup)
+- Create scene folders with file tools — there is no `scenes new`
+
+### Versioning and backup
+
+- Copy scene folder (`cp -R scenes/id scenes/other-id`, or host file tools). Use hidden folders (e.g. `.my-scene`) for necessary copies that user doesn't want to see in viewer UI (Library tab). CLI `list` / `validate` / `show` still works with them.
+- Use Git in the workspace for anything more advanced.
 
 ## Contract (one scene)
 
@@ -58,7 +70,7 @@ Create scene folders with file tools — there is no `scenes new`.
 }
 ```
 
-- `dimensions`: optional 2 | 3 (default 3) → orbit vs pan/zoom
+- `dimensions`: optional 2 | 3 (default 3) → control/projection mode (not replaced by a scene `Camera`)
 - `attribution`: optional object
 
 ### World
@@ -113,6 +125,10 @@ export function setup(ctx) {
   const layers = Array.isArray(p.layers) ? p.layers : [];
   const pts = parseXYPairs(p.points ?? "");
   const lift = (p.lift ?? 0) * Math.PI / 180; // degree unit in UI → radians here
+
+  // Overrides (optional, under ctx.root): lights replace defaults; Camera = start pose only
+  // ctx.root.add(new THREE.DirectionalLight(0xffffff, 1));
+  // const cam = new THREE.PerspectiveCamera(); cam.position.set(4, 3, 6); cam.lookAt(0, 0, 0); ctx.root.add(cam);
 
   // polyline through points in XY, slight Y rotation for depth in 3D view
   if (layers.includes("curve")) {

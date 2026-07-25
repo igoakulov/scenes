@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 /**
  * Scene summary — type scale matches base-mira Card / Empty / Item.
- * Copy control pastes `id - title` for agent reference.
+ * Copy control pastes `id: "title"` for agent reference.
  */
 export function SummaryPanel({
   id,
@@ -16,7 +16,7 @@ export function SummaryPanel({
   metadata: SceneMetadata;
 }) {
   const [copied, setCopied] = useState(false);
-  const copyText = `${id} - ${metadata.title}`;
+  const copyText = `${id}: "${metadata.title}"`;
 
   const copyRef = useCallback(async () => {
     try {

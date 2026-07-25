@@ -11,15 +11,15 @@ export interface SceneListEntry {
 }
 
 /**
- * Workspace scene folders with optional titles (same meta bar as `scenes list`).
- * Does not import scene.js. Missing scenes/ → empty array.
+ * Library rows for the viewer (`GET /api/scenes`).
+ * Omits dot-prefixed folders; does not import scene.js. Missing scenes/ → [].
  */
 export async function listSceneEntries(
   workspace: string,
 ): Promise<SceneListEntry[]> {
   let ids: string[];
   try {
-    ids = await listSceneIds(workspace);
+    ids = await listSceneIds(workspace, { library: true });
   } catch {
     return [];
   }

@@ -107,6 +107,11 @@ describe("show", () => {
       recursive: true,
     });
     await cp(
+      join(fixtures, "valid-basic"),
+      join(workspace, "scenes", ".hidden-bak"),
+      { recursive: true },
+    );
+    await cp(
       join(fixtures, "invalid-metadata"),
       join(workspace, "scenes", "bad-meta"),
       { recursive: true },
@@ -143,6 +148,7 @@ describe("show", () => {
               assert.equal(byId.demo?.title, "Valid basic");
               assert.equal(byId["bad-meta"]?.id, "bad-meta");
               assert.equal(byId["bad-meta"]?.title, undefined);
+              assert.equal(byId[".hidden-bak"], undefined);
             } finally {
               child.kill("SIGTERM");
             }
