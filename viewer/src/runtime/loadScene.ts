@@ -39,6 +39,8 @@ export interface LoadedScene {
 
 export interface SceneModule {
   setup: (host: SceneHostContext) => void;
+  /** Optional per-frame sim; host owns t/dt and play/pause. */
+  update?: (host: SceneHostContext, t: number, dt: number) => void;
   params?: () => unknown;
   onParamsChange?: (
     params: Record<string, ParamValue>,
@@ -61,13 +63,23 @@ export function sceneBaseUrlAbsolute(id: string): string {
 }
 
 export async function loadMetadata(id: string): Promise<SceneMetadata> {
-  const res = await fetch(`${sceneBaseUrl(id)}/metadata.json`, {
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${sceneBaseUrl(id)}/metadata.json`, {
+      cache: "no-store",
+    });
+  } catch {
+    throw new Error("failed to fetch metadata.json");
+  }
   if (!res.ok) {
     throw new Error(`metadata.json: HTTP ${res.status}`);
   }
-  const raw = (await res.json()) as Record<string, unknown>;
+  let raw: Record<string, unknown>;
+  try {
+    raw = (await res.json()) as Record<string, unknown>;
+  } catch {
+    throw new Error("metadata.json: invalid JSON");
+  }
   if (typeof raw.title !== "string" || typeof raw.description !== "string") {
     throw new Error("metadata.json: missing title/description");
   }
@@ -92,7 +104,18 @@ export async function loadMetadata(id: string): Promise<SceneMetadata> {
 
 export async function loadSceneModule(id: string): Promise<SceneModule> {
   const url = `${sceneBaseUrl(id)}/scene.js?t=${Date.now()}`;
-  const mod = (await import(/* @vite-ignore */ url)) as SceneModule;
+  let mod: SceneModule;
+  try {
+    mod = (await import(/* @vite-ignore */ url)) as SceneModule;
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    // Keep a stable phrase for userFacingError; detail is for console.
+    console.error("scene.js import failed:", err);
+    if (/404|not found|failed to fetch/i.test(detail)) {
+      throw new Error("scene.js: HTTP 404");
+    }
+    throw new Error("Failed to fetch dynamically imported module");
+  }
   if (typeof mod.setup !== "function") {
     throw new Error("scene.js: setup want function");
   }

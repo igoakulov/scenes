@@ -1,6 +1,6 @@
 {
   "name": "scenes",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Agent skill for interactive educational Three.js scenes, plus local CLI and viewer to manage and explore them.",
   "type": "module",
   "bin": {

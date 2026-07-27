@@ -57,12 +57,16 @@ body,
   right: 16px;
   bottom: 16px;
   z-index: 2;
+  max-width: 36rem;
   border-radius: 0.375rem;
   border: 1px solid color-mix(in oklch, var(--destructive) 40%, transparent);
   background: color-mix(in oklch, var(--card) 92%, transparent);
   padding: 0.5rem 0.75rem;
   font-size: 12px;
+  line-height: 1.4;
   color: var(--destructive);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Always top-right of the window (over sheet header when open). One node, no flash. */

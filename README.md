@@ -16,7 +16,7 @@ Scene content is **pretty much pure [Three.js](https://threejs.org/)** in a smal
 |-------|------|
 | **Skill** | How agents author portable scenes and use the product |
 | **CLI** | Init workspace, validate, list, show |
-| **Viewer + runtime** | Browse the library, open a scene, parameters, camera, tools |
+| **Viewer + runtime** | Scene library, fullscreen view, scene description, basic controls and contextual interactive cards |
 
 Ships as **one npm package** when published: skill + CLI + embedded viewer together.
 

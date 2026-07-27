@@ -15,6 +15,7 @@ import {
   type GridState,
 } from "./runtime/SceneRuntime";
 import { gridForDimensions } from "./runtime/grid";
+import { userFacingError } from "./runtime/viewerError";
 import { cn } from "@/lib/utils";
 
 /** Sheet body tab — always all three; Summary/Explore need a selected scene. */
@@ -51,25 +52,34 @@ export function App() {
     return gridByKey.get(gridKey(id)) ?? { ...DEFAULT_GRID };
   });
   const [loading, setLoading] = useState(false);
+  const [playback, setPlayback] = useState({ show: false, playing: false });
 
   const hasScene = sceneId != null;
 
   useEffect(() => {
     const host = canvasHostRef.current;
     if (!host) return;
-    const rt = new SceneRuntime({ container: host });
+    const rt = new SceneRuntime({
+      container: host,
+      onError: (message) => setError(userFacingError(message)),
+    });
     runtimeRef.current = rt;
     const initial = gridByKey.get(gridKey(readIdFromUrl())) ?? {
       ...DEFAULT_GRID,
     };
     rt.setGridState(initial);
+    const unsub = rt.subscribePlayback(() => {
+      setPlayback(rt.getPlaybackUi());
+    });
+    setPlayback(rt.getPlaybackUi());
     return () => {
+      unsub();
       rt.dispose();
       runtimeRef.current = null;
     };
   }, []);
 
-  // Simple global keys: / panel, r reset when host camera on
+  // Simple global keys: / panel, r reset when host camera on, Space play/pause
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
@@ -90,6 +100,14 @@ export function App() {
         if (flags && !flags.camera) return;
         e.preventDefault();
         runtimeRef.current?.resetView();
+      } else if (e.key === " " || e.code === "Space") {
+        // When camera: false, Space is free for the scene (jump/fly); use Explore Play/Pause.
+        const flags = runtimeRef.current?.getRuntimeFlags();
+        if (flags && !flags.camera) return;
+        const ui = runtimeRef.current?.getPlaybackUi();
+        if (!ui?.show) return;
+        e.preventDefault();
+        runtimeRef.current?.togglePlaying();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -134,8 +152,7 @@ export function App() {
         document.title = `${scene.metadata.title} · Scenes`;
       } catch (err) {
         if (cancelled) return;
-        const msg = err instanceof Error ? err.message : String(err);
-        setError(msg);
+        setError(userFacingError(err));
         setLoaded(null);
         setLiveParams({});
         rt.showEmpty();
@@ -220,7 +237,11 @@ export function App() {
             next = loaded.module.onParamsChange(next, { key, value });
           } catch (err) {
             setError(
-              `onParamsChange threw: ${err instanceof Error ? err.message : String(err)}`,
+              userFacingError(
+                new Error(
+                  `onParamsChange threw: ${err instanceof Error ? err.message : String(err)}`,
+                ),
+              ),
             );
             return prev;
           }
@@ -236,7 +257,7 @@ export function App() {
             runtimeRef.current.remountWithParams(loaded, bag);
             setError(null);
           } catch (err) {
-            setError(err instanceof Error ? err.message : String(err));
+            setError(userFacingError(err));
           }
         }, 80);
 
@@ -328,8 +349,8 @@ export function App() {
                   !loaded &&
                   !loading &&
                   error && (
-                    <p className="text-xs text-muted-foreground">
-                      Could not load scene.
+                    <p className="text-xs text-muted-foreground break-words">
+                      {error}
                     </p>
                   )}
                 {sheetTab === "explore" && hasScene && (
@@ -339,8 +360,12 @@ export function App() {
                       dimensions={loaded?.metadata.dimensions ?? 3}
                       showHelpers={loaded?.runtime.helpers ?? true}
                       showCameraReset={loaded?.runtime.camera ?? true}
+                      showPlayback={playback.show}
+                      playing={playback.playing}
+                      spaceTogglesPlayback={loaded?.runtime.camera ?? true}
                       onGridChange={onGridChange}
                       onResetView={() => runtimeRef.current?.resetView()}
+                      onTogglePlay={() => runtimeRef.current?.togglePlaying()}
                     />
                     {loaded && loaded.paramsTree.length > 0 && (
                       <ParamsPanel

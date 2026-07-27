@@ -11,8 +11,14 @@ interface Props {
   showHelpers: boolean;
   /** Host camera nav on — show Reset camera [R]. */
   showCameraReset: boolean;
+  /** Host transport eligible — show Play/Pause. */
+  showPlayback: boolean;
+  playing: boolean;
+  /** Space toggles transport only when host camera is on. */
+  spaceTogglesPlayback: boolean;
   onGridChange: (partial: Partial<GridState>) => void;
   onResetView: () => void;
+  onTogglePlay: () => void;
 }
 
 type PlaneKey = "showFloor" | "showXY" | "showYZ";
@@ -37,13 +43,17 @@ export function ExploreTools({
   dimensions,
   showHelpers,
   showCameraReset,
+  showPlayback,
+  playing,
+  spaceTogglesPlayback,
   onGridChange,
   onResetView,
+  onTogglePlay,
 }: Props) {
   const options = planeOptions(dimensions);
   const selected = options.filter((o) => grid[o.key]).map((o) => o.key);
 
-  if (!showHelpers && !showCameraReset) return null;
+  if (!showHelpers && !showCameraReset && !showPlayback) return null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -83,14 +93,33 @@ export function ExploreTools({
         </div>
       )}
 
-      {showCameraReset && (
-        <button
-          type="button"
-          className="text-center text-xs text-muted-foreground hover:text-foreground"
-          onClick={onResetView}
-        >
-          Reset camera [R]
-        </button>
+      {(showPlayback || showCameraReset) && (
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          {showPlayback && (
+            <button
+              type="button"
+              className="text-center text-xs text-muted-foreground hover:text-foreground"
+              onClick={onTogglePlay}
+            >
+              {playing
+                ? spaceTogglesPlayback
+                  ? "Pause [Space]"
+                  : "Pause"
+                : spaceTogglesPlayback
+                  ? "Play [Space]"
+                  : "Play"}
+            </button>
+          )}
+          {showCameraReset && (
+            <button
+              type="button"
+              className="text-center text-xs text-muted-foreground hover:text-foreground"
+              onClick={onResetView}
+            >
+              Reset camera [R]
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

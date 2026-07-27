@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { userFacingError } from "../runtime/viewerError";
 import { cn } from "@/lib/utils";
 
 export interface SceneListEntry {
@@ -59,7 +60,7 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
       } catch (err) {
         if (!cancelled) {
           setEntries(null);
-          setError(err instanceof Error ? err.message : String(err));
+          setError(userFacingError(err));
         }
       }
     })();
@@ -71,8 +72,8 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
   let body: ReactNode;
   if (error) {
     body = (
-      <p className="m-0 px-2 text-xs text-muted-foreground">
-        Could not load library.
+      <p className="m-0 px-2 text-xs text-muted-foreground" title={error}>
+        {error}
       </p>
     );
   } else if (entries === null) {

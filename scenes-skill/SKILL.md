@@ -8,7 +8,7 @@ description: >-
 
 # Scenes
 
-Plain Three.js scene folders + `scenes` CLI + local viewer. Content under `host.root`; runtime owns loop, chrome, and defaults unless opted out.
+You are a teacher who uses Three.js to showcase STEM subjects and concepts for more visual, interactive learning. This package includes Plain Three.js scene folders + `scenes` CLI + local viewer. Content under `host.root`; runtime owns loop, chrome, and defaults unless opted out.
 
 ## Install
 
@@ -27,29 +27,29 @@ scenes init [path]             # once; omit path → cwd
 <ws>/scenes/<id>/
   metadata.json
   scene.js
-  assets/                # optional
+  assets/           # optional
 ```
 
-Create scene folders with file tools — no `scenes new`.
+Create scene folders with file tools.
 
 ## Content guidelines
 
-Unless the human states otherwise:
+Unless user states otherwise:
 
 - RH Y-up (Three defaults): +X right, +Y up, +Z toward viewer on face-on XY.
 - Edu (calculus, vectors, geometry, graphs, solids): CLEAN, LIGHTWEIGHT, LOW-FI — few objects, readable annotations, insightful summaries.
-- Showcases / capability demos: MAX EFFORT — higher fidelity and creative freedom.
+- Showcases / model benchmark demos: MAX EFFORT — higher fidelity and creative freedom.
 - Primary content near origin, modest unit scale.
-- Things the user should play with (sizes, dimensions, angles, scales, show/hide, modes, …) → add cards and params(), more details below; skip fixed decoration.
+- Object / scene params that user should play with (sizes, angles, scales, show/hide, modes, …) → use host-provided cards, not fixed decoration (see Interactive cards section).
 
-## Contract (must follow)
+## Contract (MUST follow)
 
 ### metadata.json
 
 ```json
 {
   "title": "Polyline through points",
-  "description": "Edit x,y pairs; runtime redraws a polyline in the XY plane. Math: $y = f(x)$ samples.",
+  "description": "Edit x,y pairs; runtime redraws a polyline...",
   "tags": ["geometry", "graphs"],
   "dimensions": 3,
   "attribution": { "model": "gpt-…", "author": "…" }
@@ -63,24 +63,26 @@ Unless the human states otherwise:
 ### Runtime
 
 ```js
-export const runtime = { lights: true, helpers: true, camera: true, playback: true };
-// omit export or key = true
+export const runtime = { lights: true, helpers: true, camera: true, playback: true }; // omit export or key = true
 ```
 
 MAY override (one flag each):
 
 - lights — true: host defaults; any THREE.Light under root hides defaults. false: no host defaults.
 - helpers — true: host origin reference planes. false: none.
-- camera — true: host navigation; first THREE.Camera under root on initial load only → start pose (position/look; FOV ignored), then removed. false: move host.camera; bind input to host.domElement.
-- playback — true: host play/pause later. false: no host transport. Static setup only until update ships.
+- camera — true: host navigation; first THREE.Camera under root on initial load only → start pose (position/look; FOV ignored), then removed. false: move host.camera; bind input to host.domElement. Do not bind `/` or `R`/`r` (host).
+- playback — true: host play/pause when scene has `update` or host idle orbit (static 3D). false: no host transport or idle orbit.
 
 MUST NOT:
 
-- Own requestAnimationFrame / setAnimationLoop for sim or draw.
-- Private animation clocks (setInterval/setTimeout time base, GSAP ticker, etc.).
+- Private loops/clocks (rAF, setAnimationLoop, setInterval/setTimeout time base, GSAP ticker, …) — motion only via `update(host, t, dt)`.
 - OrbitControls or other navigation when runtime.camera is true.
 - Custom label DOM — only userData.annotation strings (KaTeX $…$ / $$…$$ ok).
-- host.renderer or a second WebGL canvas.
+- host.renderer / second WebGL canvas.
+
+### Animation
+
+Optional `export function update(host, t, dt)` — host-driven time (`t` seconds, `dt` step); put all motion here. If `camera: false` and OrbitControls use damping, call `controls.update()` from `update`. Host may idle-orbit static 3D cameras — don’t author that yourself.
 
 ### host (setup argument)
 
@@ -90,43 +92,52 @@ MUST NOT:
 - camera — host THREE.Camera
 - domElement — host WebGL canvas
 
-### Interactive cards + params()
+### Interactive cards
 
-Host renders user interaction cards from `export function params()` → node array (or omit / `[]`). Cards can mix: editable fields (land in host.params), computed display-only labels, guidance notes. On user edit: optional onParamsChange(params, change) with change = { key, value } → bag; host clears host.root and re-runs setup(host) from the bag. Optional validateParams(params) → soft issues [{ key?, message, cardId? }…] or []; checked by scenes validate on defaults (not live UI). Unknown `type` fails validate.
+`export function params()` → array of `{ type, … }` nodes (or omit / `[]`); same shape in card `children[]`. Host shows cards; editable fields fill flat `host.params`. Unknown `type` fails `scenes validate`.
 
-Types:
+DISPLAY types (no `key`, not in `host.params`):
 
-- card — layout. title, children[], optional id
-- note — guidance prose. text (KaTeX ok). No key (not in host.params)
-- label — computed display-only. label, value string OR (params) => string. No key
-- number → editable number. key, label, default, min, max required; optional step, unit
-- boolean → editable boolean. key, label, default
-- select → editable string. key, label, options[], default ∈ options
-- multiselect → editable string[]. key, label, options[], default[] each ∈ options
-- string → editable string. key, label, default; optional placeholder
+- card — title, children[], optional id
+- note — guidance prose; text (KaTeX ok)
+- label — computed display; label, value string OR `(params) => string`
 
-Rules:
+EDITABLE types (each has key, label, default → `host.params`):
 
-- Single ordered children on cards — NO parallel fields
+- number — min, max required; optional step, unit
+- boolean
+- select — options[]; default ∈ options
+- multiselect — options[]; default[] each ∈ options
+- string — optional placeholder
+
+LIFECYCLE
+
+- User edits field → optional `onParamsChange(params, change)` with `change = { key, value }` → bag → host clears `host.root` and re-runs `setup(host)`.
+- Optional `validateParams(params)` → soft issues `[{ key?, message, cardId? }…]` or `[]` — CLI `scenes validate` on defaults only (not live UI).
+
+RULES
+
+- Single ordered `children` on cards — no parallel field rows
 - Writable keys UNIQUE tree-wide; bag FLAT
-- Angles: number + unit "rad" or "°" — no angle type
-- Vectors: separate number keys (v_x, v_y, v_z)
+- Do NOT invent types (vector, color, angle, text, …)
+- Angles: number + unit `"rad"` or `"°"`
+- Vectors: separate number keys (`v_x`, `v_y`, `v_z`)
 - Freeform lists: string + parse in setup; format in placeholder
 - Fixed multi flags: multiselect
-- Do NOT invent types (vector, color, angle, text, …)
 
 ### scene.js example
 
 ```js
 import * as THREE from "three";
 
-// export const runtime = { lights: true, helpers: true, camera: true, playback: true };
+// optional: export const runtime = { lights: true, helpers: true, camera: true, playback: true };
+// optional: export function update(host, t, dt) { /* motion from t/dt only */ }
 
 export function setup(host) {
   const p = host.params;
+  const pts = parseXYPairs(p.points ?? ""); // freeform string → [[x,y],…] (no points type)
+  const lift = (p.lift ?? 0) * Math.PI / 180; // number + unit "°"
   const layers = Array.isArray(p.layers) ? p.layers : [];
-  const pts = parseXYPairs(p.points ?? "");
-  const lift = (p.lift ?? 0) * Math.PI / 180;
 
   if (layers.includes("curve")) {
     const pos = [];
@@ -139,37 +150,18 @@ export function setup(host) {
     host.root.add(line);
   }
 
-  if (layers.includes("ends")) {
-    for (let i = 0; i < pts.length; i++) {
-      const [x, y] = pts[i];
-      const m = new THREE.Mesh(
-        new THREE.SphereGeometry(0.08, 12, 12),
-        new THREE.MeshStandardMaterial({
-          color: i === 0 || i === pts.length - 1 ? 0x22c55e : 0x64748b,
-        }),
-      );
-      m.position.set(x, y, 0);
-      m.name = `pt-${i}`;
-      host.root.add(m);
-    }
+  // nested-card vec3 → flat bag off_x/off_y/off_z
+  if (layers.includes("marker")) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 12), new THREE.MeshBasicMaterial({ color: 0x88aaff }));
+    m.position.set(p.off_x ?? 0, p.off_y ?? 0, p.off_z ?? 0);
+    m.name = "offset-marker";
+    host.root.add(m);
   }
 
-  if (layers.includes("offset")) {
-    const ox = p.off_x ?? 0, oy = p.off_y ?? 0, oz = p.off_z ?? 0;
-    const dir = new THREE.Vector3(ox, oy, oz);
-    if (dir.lengthSq() > 1e-8) {
-      const arr = new THREE.ArrowHelper(
-        dir.clone().normalize(), new THREE.Vector3(0, 0, 0), dir.length(), 0x88aaff,
-      );
-      arr.name = "offset";
-      host.root.add(arr);
-    }
-  }
-
-  if (p.show_label !== false) {
+  if (p.show_label !== false && pts.length) {
     const ann = new THREE.Object3D();
-    ann.position.set(pts[pts.length - 1][0], pts[pts.length - 1][1] + 0.25, 0);
-    ann.userData.annotation = `${pts.length} pts`;
+    ann.position.set(pts.at(-1)[0], pts.at(-1)[1] + 0.25, 0);
+    ann.userData.annotation = `${pts.length} pts`; // host labels only
     ann.name = "count-label";
     host.root.add(ann);
   }
@@ -177,6 +169,7 @@ export function setup(host) {
   // assets: new URL("assets/tex.png", host.baseUrl).href
 }
 
+// freeform list: parse string field in setup
 function parseXYPairs(raw) {
   const pts = String(raw).split(";").map((s) => s.trim()).filter(Boolean)
     .map((pair) => pair.split(/[\s,]+/).map(Number));
@@ -192,12 +185,12 @@ export function params() {
       type: "card",
       title: "Polyline",
       children: [
-        { type: "note", text: "Samples as $x,y$ pairs." }, // guidance note (not in host.params)
-        { key: "points", type: "string", label: "Points", default: "0,0; 1,1; 2,0.5; 3,2", placeholder: "x,y; x,y; …" }, // user-editable
+        { type: "note", text: "Samples as $x,y$ pairs." }, // guidance (not in host.params)
+        { key: "points", type: "string", label: "Points", default: "0,0; 1,1; 2,0.5; 3,2", placeholder: "x,y; x,y; …" }, // freeform list
         { key: "lift", type: "number", label: "Yaw", min: -45, max: 45, step: 1, default: 0, unit: "°" },
         { key: "show_label", type: "boolean", label: "Count annotation", default: true },
-        { key: "layers", type: "multiselect", label: "Show", options: ["curve", "ends", "offset"], default: ["curve", "ends"] },
-        { type: "label", label: "Segment count", value: (q) => Math.max(0, String(q.points || "").split(";").filter((s) => s.trim()).length - 1) }, // computed display-only
+        { key: "layers", type: "multiselect", label: "Show", options: ["curve", "marker"], default: ["curve", "marker"] },
+        { type: "label", label: "Segment count", value: (q) => Math.max(0, String(q.points || "").split(";").filter((s) => s.trim()).length - 1) }, // computed
         {
           type: "card",
           title: "Offset (components)",
@@ -213,16 +206,14 @@ export function params() {
   ];
 }
 
+// optional: must return params bag
 export function onParamsChange(params, change) {
-  // optional; change = { key, value }
-  if (change.key === "lift" && params.lift > 30) {
-    return { ...params, lift: 30 };
-  }
+  if (change.key === "lift" && params.lift > 30) return { ...params, lift: 30 };
   return params;
 }
 
+// optional: CLI scenes validate on defaults; [] = ok
 export function validateParams(params) {
-  // optional; scenes validate (defaults); [] = ok
   if (String(params.points || "").split(";").filter((s) => s.trim()).length < 2) {
     return [{ key: "points", message: "need at least two points" }];
   }
@@ -247,7 +238,7 @@ Edits → tell user to refresh browser. Restart show only: switch id, dead serve
 
 ```bash
 cp -R scenes/my-scene scenes/my-scene-backup   # or host file tools
-cp -R scenes/my-scene scenes/.my-scene         # leading . hides from Library; CLI still targets
+cp -R scenes/my-scene scenes/.my-scene         # leading . hides from list UI; CLI still targets
 ```
 
 Prefer git in the workspace for anything more advanced.

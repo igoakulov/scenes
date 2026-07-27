@@ -88,7 +88,7 @@ export function resolveLabelValue(
       const out = value(params);
       return typeof out === "string" ? out : String(out);
     } catch (err) {
-      return `(error: ${err instanceof Error ? err.message : String(err)})`;
+      return "(couldn't compute)";
     }
   }
   return value;

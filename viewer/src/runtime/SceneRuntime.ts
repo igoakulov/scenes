@@ -11,9 +11,11 @@ import {
   GridController,
   type GridState,
 } from "./grid";
+import type { ParamValue } from "./defaults";
 import {
   sceneBaseUrlAbsolute,
   type LoadedScene,
+  type SceneHostContext,
   type SceneMetadata,
 } from "./loadScene";
 import {
@@ -26,6 +28,15 @@ import { SceneSideEffects } from "./sceneSideEffects";
 /** Match shadcn dark --background (zinc). */
 const BG = 0x18181b;
 
+/** Modest OrbitControls autoRotate for host idle orbit (static 3D). */
+const IDLE_ORBIT_SPEED = 1.0;
+
+export interface PlaybackUi {
+  /** Show Play/Pause when transport is eligible. */
+  show: boolean;
+  playing: boolean;
+}
+
 export interface SceneRuntimeOptions {
   container: HTMLElement;
   onError?: (message: string) => void;
@@ -33,6 +44,7 @@ export interface SceneRuntimeOptions {
 
 export class SceneRuntime {
   private container: HTMLElement;
+  private onError?: (message: string) => void;
   private renderer: THREE.WebGLRenderer;
   private labelRenderer: CSS2DRenderer;
   private scene: THREE.Scene;
@@ -56,8 +68,20 @@ export class SceneRuntime {
   /** Whether host OrbitControls listeners are currently attached. */
   private hostControlsConnected = true;
 
+  /** Active scene module (null when empty shell). */
+  private loaded: LoadedScene | null = null;
+  private sceneParams: Record<string, ParamValue> = {};
+  /** Sim clock (seconds). Advances only while playing with `update`. */
+  private t = 0;
+  private playing = false;
+  private lastFrameMs: number | null = null;
+  /** After update() throws, stay paused until user hits Play (no spam). */
+  private updateFaulted = false;
+  private playbackListeners = new Set<() => void>();
+
   constructor(opts: SceneRuntimeOptions) {
     this.container = opts.container;
+    this.onError = opts.onError;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -101,7 +125,10 @@ export class SceneRuntime {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
+    this.controls.autoRotateSpeed = IDLE_ORBIT_SPEED;
     this.controls.target.copy(this.defaultTarget);
+    // Package 2: any host-nav gesture permanently pauses idle orbit until Play.
+    this.controls.addEventListener("start", this.onControlsStart);
     this.applyCameraMode(3);
 
     this.ro = new ResizeObserver(() => this.resizeNow());
@@ -123,7 +150,37 @@ export class SceneRuntime {
     this.grid.setState(partial);
   }
 
-  /** Reset host camera pose. When host nav is off, still moves the camera object (for load defaults); UI/hotkey must not call when `camera: false`. */
+  /** Transport chrome state for Explore + Space. */
+  getPlaybackUi(): PlaybackUi {
+    return {
+      show: this.isTransportEligible(),
+      playing: this.playing,
+    };
+  }
+
+  /** Subscribe to play/pause / eligibility changes. Returns unsubscribe. */
+  subscribePlayback(cb: () => void): () => void {
+    this.playbackListeners.add(cb);
+    return () => {
+      this.playbackListeners.delete(cb);
+    };
+  }
+
+  setPlaying(playing: boolean): void {
+    if (!this.isTransportEligible()) return;
+    if (this.playing === playing) return;
+    this.playing = playing;
+    if (playing) this.updateFaulted = false;
+    this.applyAutoRotate();
+    this.notifyPlayback();
+  }
+
+  togglePlaying(): void {
+    if (!this.isTransportEligible()) return;
+    this.setPlaying(!this.playing);
+  }
+
+  /** Reset host camera pose. Play state unchanged (contract §6.1). */
   resetView(): void {
     this.camera.position.copy(this.defaultCamPos);
     this.controls.target.copy(this.defaultTarget);
@@ -153,26 +210,51 @@ export class SceneRuntime {
 
   mountScene(loaded: LoadedScene): void {
     this.tearDownSceneContent();
+    this.loaded = loaded;
     this.flags = { ...loaded.runtime };
     this.dimensions = loaded.metadata.dimensions;
+    this.sceneParams = { ...loaded.params };
+    this.t = 0;
+    this.updateFaulted = false;
+    this.lastFrameMs = null;
     this.applyCameraMode(this.dimensions);
     this.applyHostPolicy();
     this.resetView();
     this.runSetup(loaded, loaded.params, { adoptStartCamera: true });
+    // Autoplay content update always; idle orbit only when transport chrome eligible.
+    this.playing =
+      this.hasUpdate() || this.isIdleOrbitEligible();
+    this.kickUpdateOnce();
+    this.applyAutoRotate();
+    this.notifyPlayback();
   }
 
   /**
-   * Re-run setup after param edits. Keeps camera pose and flags.
-   * Re-applies light defaults vs agent lights; does not reset view.
+   * Re-run setup after param edits. Keeps camera pose, flags, and play/pause.
+   * Resets t when update exists.
    */
   remountWithParams(
     loaded: LoadedScene,
     params: LoadedScene["params"],
   ): void {
     this.tearDownSceneContent();
-    // Flags unchanged on remount (static export).
+    this.loaded = loaded;
+    this.sceneParams = { ...params };
+    // Flags unchanged on remount (static export). Keep playing boolean.
+    if (this.hasUpdate()) this.t = 0;
+    this.updateFaulted = false;
     this.applyHostPolicy();
     this.runSetup(loaded, params, { adoptStartCamera: false });
+    // Keep playing; force on if content update exists (playback:false still runs).
+    if (this.hasUpdate()) {
+      // keep this.playing as-is when transport chrome exists; else always on
+      if (!this.flags.playback) this.playing = true;
+    } else if (!this.isIdleOrbitEligible()) {
+      this.playing = false;
+    }
+    this.kickUpdateOnce();
+    this.applyAutoRotate();
+    this.notifyPlayback();
   }
 
   private runSetup(
@@ -182,13 +264,7 @@ export class SceneRuntime {
   ): void {
     this.sideEffects.start(this.renderer.domElement);
     try {
-      loaded.module.setup({
-        root: this.root,
-        params: { ...params },
-        baseUrl: sceneBaseUrlAbsolute(loaded.id),
-        camera: this.camera,
-        domElement: this.renderer.domElement,
-      });
+      loaded.module.setup(this.buildHost(params));
     } catch (err) {
       this.sideEffects.stop();
       throw new Error(
@@ -200,6 +276,72 @@ export class SceneRuntime {
       this.adoptStartCameraFromRoot();
     }
     this.annotations = discoverAnnotations(this.root);
+  }
+
+  private buildHost(
+    params: Record<string, ParamValue> = this.sceneParams,
+  ): SceneHostContext {
+    const id = this.loaded?.id ?? "";
+    return {
+      root: this.root,
+      params: { ...params },
+      baseUrl: sceneBaseUrlAbsolute(id),
+      camera: this.camera,
+      domElement: this.renderer.domElement,
+    };
+  }
+
+  private hasUpdate(): boolean {
+    return typeof this.loaded?.module.update === "function";
+  }
+
+  /** Host idle orbit: static 3D + host camera + playback + no content update. */
+  private isIdleOrbitEligible(): boolean {
+    return (
+      !this.hasUpdate() &&
+      this.flags.camera &&
+      this.flags.playback &&
+      this.dimensions === 3 &&
+      this.loaded != null
+    );
+  }
+
+  private isTransportEligible(): boolean {
+    if (!this.flags.playback || this.loaded == null) return false;
+    return this.hasUpdate() || this.isIdleOrbitEligible();
+  }
+
+  private kickUpdateOnce(): void {
+    if (!this.hasUpdate() || !this.loaded) return;
+    try {
+      this.loaded.module.update!(this.buildHost(), this.t, 0);
+    } catch (err) {
+      this.handleUpdateError(err);
+    }
+  }
+
+  private handleUpdateError(err: unknown): void {
+    this.playing = false;
+    this.updateFaulted = true;
+    this.applyAutoRotate();
+    this.notifyPlayback();
+    const msg = `update() threw: ${err instanceof Error ? err.message : String(err)}`;
+    this.onError?.(msg);
+  }
+
+  private applyAutoRotate(): void {
+    const on = this.isIdleOrbitEligible() && this.playing;
+    this.controls.autoRotate = on;
+  }
+
+  private onControlsStart = (): void => {
+    // Only permanent-pause when idle orbit is the motion source (not content update).
+    if (!this.isIdleOrbitEligible()) return;
+    if (this.playing) this.setPlaying(false);
+  };
+
+  private notifyPlayback(): void {
+    for (const cb of this.playbackListeners) cb();
   }
 
   /** Host nav, grid visibility from current flags. */
@@ -222,6 +364,7 @@ export class SceneRuntime {
         this.controls.disconnect();
         this.hostControlsConnected = false;
       }
+      this.controls.autoRotate = false;
     }
   }
 
@@ -256,12 +399,20 @@ export class SceneRuntime {
   /** No scene content — Grid + default lights remain (runtime-owned). */
   showEmpty(): void {
     this.tearDownSceneContent();
+    this.loaded = null;
+    this.sceneParams = {};
     this.flags = { ...DEFAULT_RUNTIME_FLAGS };
+    this.t = 0;
+    this.playing = false;
+    this.updateFaulted = false;
+    this.lastFrameMs = null;
+    this.controls.autoRotate = false;
     for (const light of this.defaultLights) light.visible = true;
     this.grid.group.visible = true;
     this.setHostNavActive(true);
     this.applyCameraMode(3);
     this.resetView();
+    this.notifyPlayback();
   }
 
   dispose(): void {
@@ -269,7 +420,9 @@ export class SceneRuntime {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
     this.ro.disconnect();
+    this.controls.removeEventListener("start", this.onControlsStart);
     this.tearDownSceneContent();
+    this.playbackListeners.clear();
     this.grid.dispose();
     this.controls.dispose();
     this.renderer.dispose();
@@ -356,10 +509,36 @@ export class SceneRuntime {
     this.labelRenderer.render(this.scene, this.camera);
   }
 
-  private loop = (): void => {
+  private loop = (now: number = performance.now()): void => {
     if (this.disposed) return;
     this.raf = requestAnimationFrame(this.loop);
-    if (this.hostNavActive) this.controls.update();
+
+    let dt = 0;
+    if (this.lastFrameMs != null) {
+      dt = Math.min(0.1, (now - this.lastFrameMs) / 1000);
+    }
+    this.lastFrameMs = now;
+
+    // Content update: when playback false, always run (no chrome to pause).
+    // When playback true, honor playing. Idle orbit uses playing + autoRotate only.
+    if (
+      this.hasUpdate() &&
+      this.loaded &&
+      !this.updateFaulted &&
+      (this.playing || !this.flags.playback)
+    ) {
+      this.t += dt;
+      try {
+        this.loaded.module.update!(this.buildHost(), this.t, dt);
+      } catch (err) {
+        this.handleUpdateError(err);
+      }
+    }
+
+    // autoRotate needs controls.update(); also damping when host nav on.
+    if (this.hostNavActive || this.controls.autoRotate) {
+      this.controls.update();
+    }
     this.renderer.render(this.scene, this.camera);
     this.labelRenderer.render(this.scene, this.camera);
   };

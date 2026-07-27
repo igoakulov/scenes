@@ -72,4 +72,38 @@ export function setup() {}
     assert.equal(bad.ok, false);
     assert.ok(bad.issues.some((i) => i.path.includes("runtime")));
   });
+
+  it("accepts update function and rejects non-function update", async () => {
+    const workspace = await mkdtemp(join(tmpdir(), "scenes-val-"));
+    await copyFixture("valid-basic", workspace, "upd-ok");
+    const { writeFile } = await import("node:fs/promises");
+    const dir = join(workspace, "scenes", "upd-ok");
+    await writeFile(
+      join(dir, "scene.js"),
+      `
+import * as THREE from "three";
+export function setup(host) {
+  host.root.add(new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshBasicMaterial()));
+}
+export function update(host, t, dt) {
+  void host; void t; void dt;
+}
+`,
+      "utf8",
+    );
+    const ok = await validateScene(workspace, "upd-ok");
+    assert.equal(ok.ok, true, JSON.stringify(ok.issues, null, 2));
+
+    await writeFile(
+      join(dir, "scene.js"),
+      `
+export function setup() {}
+export const update = 1;
+`,
+      "utf8",
+    );
+    const bad = await validateScene(workspace, "upd-ok");
+    assert.equal(bad.ok, false);
+    assert.ok(bad.issues.some((i) => i.path === "scene.update"));
+  });
 });
