@@ -101,6 +101,8 @@ async function validateSceneModule(scenePath: string): Promise<ValidationIssue[]
     issues.push({ path: "scene.validateParams", message: "want function" });
   }
 
+  issues.push(...validateRuntimeExport(mod.runtime));
+
   if (mod.params === undefined) {
     return issues;
   }
@@ -143,5 +145,26 @@ async function validateSceneModule(scenePath: string): Promise<ValidationIssue[]
     issues.push(...validateParamsResult(result, "params.check"));
   }
 
+  return issues;
+}
+
+const RUNTIME_KEYS = new Set(["lights", "helpers", "camera", "playback"]);
+
+function validateRuntimeExport(raw: unknown): ValidationIssue[] {
+  if (raw === undefined) return [];
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+    return [{ path: "scene.runtime", message: "want plain object" }];
+  }
+  const issues: ValidationIssue[] = [];
+  const obj = raw as Record<string, unknown>;
+  for (const key of Object.keys(obj)) {
+    if (!RUNTIME_KEYS.has(key)) {
+      issues.push({ path: `scene.runtime.${key}`, message: "unknown key" });
+      continue;
+    }
+    if (typeof obj[key] !== "boolean") {
+      issues.push({ path: `scene.runtime.${key}`, message: "want boolean" });
+    }
+  }
   return issues;
 }

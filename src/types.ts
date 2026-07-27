@@ -17,7 +17,7 @@ export interface SceneMetadata {
   [key: string]: unknown;
 }
 
-/** Writable control types — values land in flat `ctx.params[key]`. */
+/** Writable control types — values land in flat `host.params[key]`. */
 export type WritableParamType =
   | "number"
   | "boolean"
@@ -47,7 +47,7 @@ export interface NumberParamField {
   max: number;
   default: number;
   step?: number;
-  /** Optional display unit (e.g. "m", "°", "AU") — not part of ctx.params. */
+  /** Optional display unit (e.g. "m", "°", "AU") — not part of host.params. */
   unit?: string;
 }
 

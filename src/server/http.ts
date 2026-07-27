@@ -201,7 +201,7 @@ export async function startShowServer(
 async function handleRequest(
   req: http.IncomingMessage,
   res: http.ServerResponse,
-  ctx: { workspace: string; viewerRoot: string; threeRoot: string },
+  roots: { workspace: string; viewerRoot: string; threeRoot: string },
 ): Promise<void> {
   try {
     if (req.method !== "GET" && req.method !== "HEAD") {
@@ -209,8 +209,8 @@ async function handleRequest(
       return;
     }
 
-    const host = req.headers.host ?? "127.0.0.1";
-    const u = new URL(req.url ?? "/", `http://${host}`);
+    const httpHost = req.headers.host ?? "127.0.0.1";
+    const u = new URL(req.url ?? "/", `http://${httpHost}`);
     let pathname = u.pathname;
     if (pathname !== "/" && pathname.endsWith("/")) {
       pathname = pathname.slice(0, -1);
@@ -218,7 +218,7 @@ async function handleRequest(
 
     // Library catalog for the viewer (metadata titles only; no scene.js).
     if (pathname === "/api/scenes") {
-      const entries = await listSceneEntries(ctx.workspace);
+      const entries = await listSceneEntries(roots.workspace);
       const body = JSON.stringify(entries);
       setCommonHeaders(res);
       res.statusCode = 200;
@@ -239,13 +239,13 @@ async function handleRequest(
         sendText(res, 404, "not found");
         return;
       }
-      const filePath = safeJoin(ctx.workspace, rest);
+      const filePath = safeJoin(roots.workspace, rest);
       if (!filePath) {
         sendText(res, 403, "forbidden");
         return;
       }
       // Only serve under scenes/
-      const scenesRoot = join(ctx.workspace, "scenes");
+      const scenesRoot = join(roots.workspace, "scenes");
       if (!isInside(scenesRoot, filePath) && filePath !== scenesRoot) {
         sendText(res, 403, "forbidden");
         return;
@@ -277,7 +277,7 @@ async function handleRequest(
         pathname === "/vendor/three"
           ? ""
           : pathname.slice("/vendor/three/".length);
-      const filePath = safeJoin(ctx.threeRoot, rest || "package.json");
+      const filePath = safeJoin(roots.threeRoot, rest || "package.json");
       if (!filePath) {
         sendText(res, 403, "forbidden");
         return;
@@ -288,7 +288,7 @@ async function handleRequest(
 
     // Viewer SPA assets
     if (pathname === "/" || pathname === "/index.html") {
-      const indexPath = join(ctx.viewerRoot, "index.html");
+      const indexPath = join(roots.viewerRoot, "index.html");
       const html = injectImportMap(await readFile(indexPath, "utf8"));
       setCommonHeaders(res);
       res.statusCode = 200;
@@ -301,7 +301,7 @@ async function handleRequest(
       return;
     }
 
-    const assetPath = safeJoin(ctx.viewerRoot, pathname.slice(1));
+    const assetPath = safeJoin(roots.viewerRoot, pathname.slice(1));
     if (assetPath && existsSync(assetPath) && statSync(assetPath).isFile()) {
       await sendFile(res, assetPath);
       return;
@@ -309,7 +309,7 @@ async function handleRequest(
 
     // SPA fallback for client routes
     if (!extname(pathname)) {
-      const indexPath = join(ctx.viewerRoot, "index.html");
+      const indexPath = join(roots.viewerRoot, "index.html");
       const html = injectImportMap(await readFile(indexPath, "utf8"));
       setCommonHeaders(res);
       res.statusCode = 200;

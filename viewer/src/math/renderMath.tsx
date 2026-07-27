@@ -1,5 +1,6 @@
 import katex from "katex";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 /**
  * Render text with $...$ (inline) and $$...$$ (display) math via KaTeX.
@@ -47,7 +48,7 @@ export function MathText({
 }): ReactNode {
   return (
     <div
-      className={className}
+      className={cn("min-w-0 break-words [overflow-wrap:anywhere]", className)}
       dangerouslySetInnerHTML={{ __html: renderMathToHtml(text) }}
     />
   );

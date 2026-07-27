@@ -52,15 +52,18 @@ export function renderLeaf(
       return (
         <MathText
           text={node.text}
-          className="rounded-md border border-dashed border-muted-foreground/40 px-2 py-1.5 text-xs/relaxed text-muted-foreground [&_.katex]:text-foreground"
+          className="min-w-0 break-words rounded-md border border-dashed border-muted-foreground/40 px-2 py-1.5 text-xs/relaxed text-muted-foreground [&_.katex]:text-foreground"
         />
       );
     case "label":
       // px-2: align name/value with text inside bordered inputs (not the outer border).
+      // Value wraps (full text); not truncate — computed labels can be long.
       return (
-        <div className="flex min-w-0 items-baseline justify-between gap-2 px-2 text-xs/relaxed">
-          <span className="shrink-0 text-muted-foreground">{node.label}</span>
-          <span className="min-w-0 truncate text-right font-mono tabular-nums text-foreground">
+        <div className="flex min-w-0 items-start justify-between gap-2 px-2 text-xs/relaxed">
+          <span className="max-w-[40%] shrink-0 break-words text-muted-foreground">
+            {node.label}
+          </span>
+          <span className="min-w-0 flex-1 break-words text-right font-mono text-foreground [overflow-wrap:anywhere]">
             {resolveLabelValue(node.value, params)}
           </span>
         </div>

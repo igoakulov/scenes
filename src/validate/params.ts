@@ -178,7 +178,7 @@ function validateNote(
   if (raw.key !== undefined) {
     issues.push({
       path: `${path}.key`,
-      message: "note is read-only; omit key (not in ctx.params)",
+      message: "note is read-only; omit key (not in host.params)",
     });
   }
   return { type: "note", text: raw.text };
@@ -203,7 +203,7 @@ function validateLabel(
   if (raw.key !== undefined) {
     issues.push({
       path: `${path}.key`,
-      message: "label is read-only; omit key (not in ctx.params)",
+      message: "label is read-only; omit key (not in host.params)",
     });
   }
   if (issues.length > before) return undefined;

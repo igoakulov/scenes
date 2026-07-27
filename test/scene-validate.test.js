@@ -40,4 +40,36 @@ describe("validateScene", () => {
     assert.equal(result.ok, false);
     assert.ok(result.issues.some((i) => i.path.startsWith("params")));
   });
+
+  it("accepts valid runtime export and rejects bad keys/types", async () => {
+    const workspace = await mkdtemp(join(tmpdir(), "scenes-val-"));
+    await copyFixture("valid-basic", workspace, "rt-ok");
+    const { writeFile } = await import("node:fs/promises");
+    const dir = join(workspace, "scenes", "rt-ok");
+    await writeFile(
+      join(dir, "scene.js"),
+      `
+import * as THREE from "three";
+export const runtime = { lights: false, helpers: true, camera: true, playback: false };
+export function setup(host) {
+  host.root.add(new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshBasicMaterial()));
+}
+`,
+      "utf8",
+    );
+    const ok = await validateScene(workspace, "rt-ok");
+    assert.equal(ok.ok, true, JSON.stringify(ok.issues, null, 2));
+
+    await writeFile(
+      join(dir, "scene.js"),
+      `
+export const runtime = { grid: false };
+export function setup() {}
+`,
+      "utf8",
+    );
+    const bad = await validateScene(workspace, "rt-ok");
+    assert.equal(bad.ok, false);
+    assert.ok(bad.issues.some((i) => i.path.includes("runtime")));
+  });
 });

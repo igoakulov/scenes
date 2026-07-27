@@ -69,7 +69,7 @@ export function App() {
     };
   }, []);
 
-  // Simple global keys: / panel, r reset (no fancy shortcut UI)
+  // Simple global keys: / panel, r reset when host camera on
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
@@ -86,6 +86,8 @@ export function App() {
         e.preventDefault();
         setSheetOpen((o) => !o);
       } else if (e.key === "r" || e.key === "R") {
+        const flags = runtimeRef.current?.getRuntimeFlags();
+        if (flags && !flags.camera) return;
         e.preventDefault();
         runtimeRef.current?.resetView();
       }
@@ -311,7 +313,7 @@ export function App() {
           </header>
           <div className="sheet-body">
             <ScrollArea className="h-full">
-              <div className="px-3 py-3">
+              <div className="min-w-0 px-3 py-3">
                 {sheetTab === "library" && (
                   <LibraryPanel onOpen={openScene} />
                 )}
@@ -331,10 +333,12 @@ export function App() {
                     </p>
                   )}
                 {sheetTab === "explore" && hasScene && (
-                  <div className="flex flex-col gap-3">
+                  <div className="flex min-w-0 flex-col gap-3">
                     <ExploreTools
                       grid={grid}
                       dimensions={loaded?.metadata.dimensions ?? 3}
+                      showHelpers={loaded?.runtime.helpers ?? true}
+                      showCameraReset={loaded?.runtime.camera ?? true}
                       onGridChange={onGridChange}
                       onResetView={() => runtimeRef.current?.resetView()}
                     />

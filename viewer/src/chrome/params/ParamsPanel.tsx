@@ -19,7 +19,7 @@ import {
 export function ParamsPanel({ tree, params, onChange }: ParamsPanelProps) {
   if (tree.length === 0) return null;
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-w-0 flex-col gap-3">
       <NodeList nodes={tree} params={params} onChange={onChange} />
     </div>
   );
@@ -44,7 +44,9 @@ function NodeList({
     const node = nodes[i]!;
     if (node.type !== "card") {
       out.push(
-        <div key={nodeKey(node, i)}>{renderLeaf(node, params, onChange)}</div>,
+        <div key={nodeKey(node, i)} className="min-w-0">
+          {renderLeaf(node, params, onChange)}
+        </div>,
       );
       i += 1;
       continue;
@@ -71,7 +73,7 @@ function NodeList({
             <AccordionItem key={value} value={value}>
               <AccordionTrigger>{card.title}</AccordionTrigger>
               <AccordionContent>
-                <div className="flex flex-col gap-3">
+                <div className="flex min-w-0 flex-col gap-3">
                   <NodeList
                     nodes={card.children}
                     params={params}

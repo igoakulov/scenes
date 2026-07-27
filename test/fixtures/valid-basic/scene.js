@@ -1,23 +1,23 @@
 import * as THREE from "three";
 
-export function setup(ctx) {
-  const size = Number(ctx.params.size) || 1;
+export function setup(host) {
+  const size = Number(host.params.size) || 1;
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(size, size, size),
     new THREE.MeshStandardMaterial({
       color: 0x4488ff,
-      wireframe: ctx.params.style === "wire",
+      wireframe: host.params.style === "wire",
     }),
   );
   mesh.name = "box";
-  mesh.visible = ctx.params.visible !== false;
-  ctx.root.add(mesh);
+  mesh.visible = host.params.visible !== false;
+  host.root.add(mesh);
 
   const label = new THREE.Object3D();
   label.position.set(0, size * 0.75, 0);
   label.userData.annotation = "Box · $s$";
   label.name = "box-label";
-  ctx.root.add(label);
+  host.root.add(label);
 }
 
 export function params() {

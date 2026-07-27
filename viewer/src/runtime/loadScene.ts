@@ -1,6 +1,11 @@
 import * as THREE from "three";
 import { defaultsFromParamsTree, type ParamValue } from "./defaults";
 import { readParamsTree, type ParamsNode } from "./paramsTree";
+import {
+  DEFAULT_RUNTIME_FLAGS,
+  resolveRuntimeFlags,
+  type RuntimeFlags,
+} from "./runtimeFlags";
 
 export interface SceneMetadata {
   title: string;
@@ -10,6 +15,17 @@ export interface SceneMetadata {
   attribution?: Record<string, unknown>;
 }
 
+export interface SceneHostContext {
+  root: THREE.Object3D;
+  params: Record<string, ParamValue>;
+  /** Absolute scene folder URL ending in `/` — resolve media with `new URL("assets/…", host.baseUrl)`. */
+  baseUrl: string;
+  /** Host camera — always provided; move it when `runtime.camera === false`. */
+  camera: THREE.Camera;
+  /** Host WebGL canvas — bind pointer/keys when `runtime.camera === false`. */
+  domElement: HTMLCanvasElement;
+}
+
 export interface LoadedScene {
   id: string;
   metadata: SceneMetadata;
@@ -17,15 +33,12 @@ export interface LoadedScene {
   params: Record<string, ParamValue>;
   /** Soft-parsed params() tree for Explore UI (unknown types skipped). */
   paramsTree: ParamsNode[];
+  /** Resolved host feature flags (defaults all true). */
+  runtime: RuntimeFlags;
 }
 
 export interface SceneModule {
-  setup: (ctx: {
-    root: THREE.Object3D;
-    params: Record<string, ParamValue>;
-    /** Absolute scene folder URL ending in `/` — resolve media with `new URL("assets/…", ctx.baseUrl)`. */
-    baseUrl: string;
-  }) => void;
+  setup: (host: SceneHostContext) => void;
   params?: () => unknown;
   onParamsChange?: (
     params: Record<string, ParamValue>,
@@ -34,6 +47,8 @@ export interface SceneModule {
   validateParams?: (
     params: Record<string, ParamValue>,
   ) => { message: string; key?: string; cardId?: string }[];
+  /** Optional host feature flags; omit or `{}` ⇒ all true. */
+  runtime?: unknown;
 }
 
 export function sceneBaseUrl(id: string): string {
@@ -104,5 +119,17 @@ export async function loadScene(id: string): Promise<LoadedScene> {
     }
   }
 
-  return { id, metadata, module, params, paramsTree };
+  let runtime = { ...DEFAULT_RUNTIME_FLAGS };
+  try {
+    runtime = resolveRuntimeFlags(module.runtime);
+  } catch (err) {
+    throw new Error(
+      err instanceof Error ? err.message : `runtime: ${String(err)}`,
+    );
+  }
+
+  return { id, metadata, module, params, paramsTree, runtime };
 }
+
+export type { RuntimeFlags };
+export { DEFAULT_RUNTIME_FLAGS, resolveRuntimeFlags };

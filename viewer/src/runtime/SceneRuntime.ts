@@ -17,10 +17,11 @@ import {
   type SceneMetadata,
 } from "./loadScene";
 import {
-  rootHasAgentLight,
-  stripOriginReferenceHelpers,
-  takeAgentStartCamera,
-} from "./sceneOwnership";
+  DEFAULT_RUNTIME_FLAGS,
+  type RuntimeFlags,
+} from "./runtimeFlags";
+import { rootHasAgentLight, takeAgentStartCamera } from "./sceneOwnership";
+import { SceneSideEffects } from "./sceneSideEffects";
 
 /** Match shadcn dark --background (zinc). */
 const BG = 0x18181b;
@@ -39,7 +40,7 @@ export class SceneRuntime {
   private camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
   private controls: OrbitControls;
   private grid: GridController;
-  /** Runtime default lights — disabled when setup adds any Light under root. */
+  /** Runtime default lights — disabled when setup adds any Light under root (if lights flag on). */
   private defaultLights: THREE.Light[] = [];
   private raf = 0;
   private disposed = false;
@@ -48,6 +49,12 @@ export class SceneRuntime {
   private defaultCamPos = new THREE.Vector3(6, 4, 8);
   private defaultTarget = new THREE.Vector3(0, 0, 0);
   private ro: ResizeObserver;
+  private sideEffects = new SceneSideEffects();
+  private flags: RuntimeFlags = { ...DEFAULT_RUNTIME_FLAGS };
+  /** Host OrbitControls intended for navigation (enabled + connected). */
+  private hostNavActive = true;
+  /** Whether host OrbitControls listeners are currently attached. */
+  private hostControlsConnected = true;
 
   constructor(opts: SceneRuntimeOptions) {
     this.container = opts.container;
@@ -56,7 +63,6 @@ export class SceneRuntime {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.setClearColor(BG, 1);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    // Fill the host; CSS also forces 100% so buffer and display size stay matched.
     this.renderer.domElement.style.display = "block";
     this.renderer.domElement.style.width = "100%";
     this.renderer.domElement.style.height = "100%";
@@ -104,6 +110,11 @@ export class SceneRuntime {
     this.loop();
   }
 
+  /** Resolved flags for the mounted scene (defaults when empty shell). */
+  getRuntimeFlags(): RuntimeFlags {
+    return { ...this.flags };
+  }
+
   getGridState(): GridState {
     return this.grid.getState();
   }
@@ -112,17 +123,19 @@ export class SceneRuntime {
     this.grid.setState(partial);
   }
 
+  /** Reset host camera pose. When host nav is off, still moves the camera object (for load defaults); UI/hotkey must not call when `camera: false`. */
   resetView(): void {
     this.camera.position.copy(this.defaultCamPos);
     this.controls.target.copy(this.defaultTarget);
-    this.controls.update();
+    if (this.hostNavActive) this.controls.update();
     if (this.camera instanceof THREE.OrthographicCamera) {
       this.camera.zoom = 1;
       this.camera.updateProjectionMatrix();
     }
   }
 
-  clearScene(): void {
+  /** Clear root + annotations only (listeners handled by sideEffects). */
+  private clearRoot(): void {
     disposeAnnotations(this.annotations);
     this.annotations = [];
     while (this.root.children.length) {
@@ -132,23 +145,33 @@ export class SceneRuntime {
     }
   }
 
+  /** Contract §9 tear-down: listeners then root. */
+  private tearDownSceneContent(): void {
+    this.sideEffects.stop();
+    this.clearRoot();
+  }
+
   mountScene(loaded: LoadedScene): void {
-    this.clearScene();
+    this.tearDownSceneContent();
+    this.flags = { ...loaded.runtime };
     this.dimensions = loaded.metadata.dimensions;
     this.applyCameraMode(this.dimensions);
+    this.applyHostPolicy();
     this.resetView();
     this.runSetup(loaded, loaded.params, { adoptStartCamera: true });
   }
 
   /**
-   * Re-run setup after param edits. Keeps camera, controls, Grid.
+   * Re-run setup after param edits. Keeps camera pose and flags.
    * Re-applies light defaults vs agent lights; does not reset view.
    */
   remountWithParams(
     loaded: LoadedScene,
     params: LoadedScene["params"],
   ): void {
-    this.clearScene();
+    this.tearDownSceneContent();
+    // Flags unchanged on remount (static export).
+    this.applyHostPolicy();
     this.runSetup(loaded, params, { adoptStartCamera: false });
   }
 
@@ -157,27 +180,59 @@ export class SceneRuntime {
     params: LoadedScene["params"],
     opts: { adoptStartCamera: boolean },
   ): void {
+    this.sideEffects.start(this.renderer.domElement);
     try {
       loaded.module.setup({
         root: this.root,
         params: { ...params },
         baseUrl: sceneBaseUrlAbsolute(loaded.id),
+        camera: this.camera,
+        domElement: this.renderer.domElement,
       });
     } catch (err) {
+      this.sideEffects.stop();
       throw new Error(
         `setup() threw: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
     this.applyDefaultLightsPolicy();
-    stripOriginReferenceHelpers(this.root);
-    if (opts.adoptStartCamera) {
+    if (opts.adoptStartCamera && this.flags.camera) {
       this.adoptStartCameraFromRoot();
     }
     this.annotations = discoverAnnotations(this.root);
   }
 
-  /** Default lights on when setup adds no Light under root. */
+  /** Host nav, grid visibility from current flags. */
+  private applyHostPolicy(): void {
+    this.setHostNavActive(this.flags.camera);
+    this.grid.group.visible = this.flags.helpers;
+  }
+
+  private setHostNavActive(active: boolean): void {
+    this.hostNavActive = active;
+    if (active) {
+      if (!this.hostControlsConnected) {
+        this.controls.connect();
+        this.hostControlsConnected = true;
+      }
+      this.controls.enabled = true;
+    } else {
+      this.controls.enabled = false;
+      if (this.hostControlsConnected) {
+        this.controls.disconnect();
+        this.hostControlsConnected = false;
+      }
+    }
+  }
+
+  /**
+   * Default lights: off when lights flag false; else on when no agent Light under root.
+   */
   private applyDefaultLightsPolicy(): void {
+    if (!this.flags.lights) {
+      for (const light of this.defaultLights) light.visible = false;
+      return;
+    }
     const agentLit = rootHasAgentLight(this.root);
     for (const light of this.defaultLights) {
       light.visible = !agentLit;
@@ -186,7 +241,7 @@ export class SceneRuntime {
 
   /**
    * Optional agent Camera under root → initial pose only; removed after copy.
-   * Projection / orbit|pan-zoom stay runtime-owned.
+   * Only when runtime.camera === true.
    */
   private adoptStartCameraFromRoot(): void {
     const view = takeAgentStartCamera(this.root);
@@ -195,13 +250,16 @@ export class SceneRuntime {
     this.defaultTarget.copy(view.target);
     this.camera.position.copy(view.position);
     this.controls.target.copy(view.target);
-    this.controls.update();
+    if (this.hostNavActive) this.controls.update();
   }
 
   /** No scene content — Grid + default lights remain (runtime-owned). */
   showEmpty(): void {
-    this.clearScene();
+    this.tearDownSceneContent();
+    this.flags = { ...DEFAULT_RUNTIME_FLAGS };
     for (const light of this.defaultLights) light.visible = true;
+    this.grid.group.visible = true;
+    this.setHostNavActive(true);
     this.applyCameraMode(3);
     this.resetView();
   }
@@ -211,7 +269,7 @@ export class SceneRuntime {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
     this.ro.disconnect();
-    this.clearScene();
+    this.tearDownSceneContent();
     this.grid.dispose();
     this.controls.dispose();
     this.renderer.dispose();
@@ -264,7 +322,7 @@ export class SceneRuntime {
       };
       this.controls.target.copy(prevTarget);
     }
-    this.controls.update();
+    if (this.hostNavActive) this.controls.update();
   }
 
   private aspect(): number {
@@ -277,8 +335,6 @@ export class SceneRuntime {
     const w = Math.max(this.container.clientWidth, 1);
     const h = Math.max(this.container.clientHeight, 1);
 
-    // Update drawing buffer AND element style so WebGL and CSS2D share the
-    // same pixel space (false left canvas at default CSS size → offset mesh).
     this.renderer.setSize(w, h, true);
     this.labelRenderer.setSize(w, h);
 
@@ -295,7 +351,7 @@ export class SceneRuntime {
       this.camera.updateProjectionMatrix();
     }
 
-    this.controls.update();
+    if (this.hostNavActive) this.controls.update();
     this.renderer.render(this.scene, this.camera);
     this.labelRenderer.render(this.scene, this.camera);
   }
@@ -303,7 +359,7 @@ export class SceneRuntime {
   private loop = (): void => {
     if (this.disposed) return;
     this.raf = requestAnimationFrame(this.loop);
-    this.controls.update();
+    if (this.hostNavActive) this.controls.update();
     this.renderer.render(this.scene, this.camera);
     this.labelRenderer.render(this.scene, this.camera);
   };
@@ -321,5 +377,5 @@ function disposeTree(obj: THREE.Object3D): void {
   });
 }
 
-export type { SceneMetadata, GridState };
-export { DEFAULT_GRID };
+export type { SceneMetadata, GridState, RuntimeFlags };
+export { DEFAULT_GRID, DEFAULT_RUNTIME_FLAGS };

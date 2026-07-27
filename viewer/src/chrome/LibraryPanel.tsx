@@ -126,10 +126,10 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-4">
       {/* Later: Collections section — same SectionHeading pattern */}
       <section
-        className="flex flex-col gap-1.5"
+        className="flex min-w-0 flex-col gap-1.5"
         aria-labelledby="library-scenes-heading"
       >
         <SectionHeading id="library-scenes-heading">Scenes</SectionHeading>
