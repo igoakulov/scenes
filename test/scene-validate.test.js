@@ -41,7 +41,7 @@ describe("validateScene", () => {
     assert.ok(result.issues.some((i) => i.path.startsWith("params")));
   });
 
-  it("accepts valid runtime export and rejects bad keys/types", async () => {
+  it("accepts valid runtime export and rejects bad keys/types/null", async () => {
     const workspace = await mkdtemp(join(tmpdir(), "scenes-val-"));
     await copyFixture("valid-basic", workspace, "rt-ok");
     const { writeFile } = await import("node:fs/promises");
@@ -63,14 +63,43 @@ export function setup(host) {
     await writeFile(
       join(dir, "scene.js"),
       `
-export const runtime = { grid: false };
+export const runtime = { grid: false, lights: "yes" };
 export function setup() {}
 `,
       "utf8",
     );
     const bad = await validateScene(workspace, "rt-ok");
     assert.equal(bad.ok, false);
-    assert.ok(bad.issues.some((i) => i.path.includes("runtime")));
+    assert.ok(bad.issues.some((i) => i.path === "scene.runtime.grid"));
+    assert.ok(bad.issues.some((i) => i.path === "scene.runtime.lights" && i.message === "want boolean"));
+
+    await writeFile(
+      join(dir, "scene.js"),
+      `
+export const runtime = { loop: false };
+export function setup() {}
+`,
+      "utf8",
+    );
+    const loop = await validateScene(workspace, "rt-ok");
+    assert.equal(loop.ok, false);
+    assert.ok(loop.issues.some((i) => i.path === "scene.runtime.loop"));
+
+    await writeFile(
+      join(dir, "scene.js"),
+      `
+export const runtime = null;
+export function setup() {}
+`,
+      "utf8",
+    );
+    const nul = await validateScene(workspace, "rt-ok");
+    assert.equal(nul.ok, false);
+    assert.ok(
+      nul.issues.some(
+        (i) => i.path === "scene.runtime" && i.message === "want plain object",
+      ),
+    );
   });
 
   it("accepts update function and rejects non-function update", async () => {
@@ -105,5 +134,49 @@ export const update = 1;
     const bad = await validateScene(workspace, "upd-ok");
     assert.equal(bad.ok, false);
     assert.ok(bad.issues.some((i) => i.path === "scene.update"));
+  });
+
+  it("accepts full runtime opt-out with update", async () => {
+    const workspace = await mkdtemp(join(tmpdir(), "scenes-val-"));
+    await copyFixture("valid-basic", workspace, "full-opt");
+    const { writeFile } = await import("node:fs/promises");
+    const dir = join(workspace, "scenes", "full-opt");
+    await writeFile(
+      join(dir, "scene.js"),
+      `
+import * as THREE from "three";
+export const runtime = {
+  lights: false,
+  helpers: false,
+  camera: false,
+  playback: false,
+};
+export function setup(host) {
+  host.root.add(new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshBasicMaterial()));
+}
+export function update(host, t, dt) {
+  void host; void t; void dt;
+}
+`,
+      "utf8",
+    );
+    const result = await validateScene(workspace, "full-opt");
+    assert.equal(result.ok, true, JSON.stringify(result.issues, null, 2));
+  });
+
+  it("does not require dispose and ignores its presence", async () => {
+    const workspace = await mkdtemp(join(tmpdir(), "scenes-val-"));
+    await copyFixture("valid-basic", workspace, "with-dispose");
+    const { writeFile } = await import("node:fs/promises");
+    await writeFile(
+      join(workspace, "scenes", "with-dispose", "scene.js"),
+      `
+export function setup() {}
+export function dispose() {}
+`,
+      "utf8",
+    );
+    const result = await validateScene(workspace, "with-dispose");
+    assert.equal(result.ok, true, JSON.stringify(result.issues, null, 2));
   });
 });

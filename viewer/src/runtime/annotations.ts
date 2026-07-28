@@ -5,6 +5,8 @@ import { fillMathElement } from "../math/renderMath";
 export interface AnnotationHandle {
   object: THREE.Object3D;
   label: CSS2DObject;
+  /** Last string rendered into the chip (dirty-check for live updates). */
+  lastText: string;
 }
 
 /**
@@ -25,12 +27,21 @@ export function discoverAnnotations(root: THREE.Object3D): AnnotationHandle[] {
     const label = new CSS2DObject(el);
     label.position.set(0, 0, 0);
     label.name = "__annotation_chip__";
-    // Center on anchor object
     obj.add(label);
-    found.push({ object: obj, label });
+    found.push({ object: obj, label, lastText: text });
   });
 
   return found;
+}
+
+/** Re-render chips when `userData.annotation` string changes (e.g. from update). */
+export function syncAnnotationTexts(handles: AnnotationHandle[]): void {
+  for (const h of handles) {
+    const text = h.object.userData?.annotation;
+    if (typeof text !== "string" || text === h.lastText) continue;
+    fillMathElement(h.label.element, text);
+    h.lastText = text;
+  }
 }
 
 export function disposeAnnotations(handles: AnnotationHandle[]): void {

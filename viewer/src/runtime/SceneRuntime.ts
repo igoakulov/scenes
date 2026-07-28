@@ -4,6 +4,7 @@ import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
 import {
   discoverAnnotations,
   disposeAnnotations,
+  syncAnnotationTexts,
   type AnnotationHandle,
 } from "./annotations";
 import {
@@ -534,6 +535,8 @@ export class SceneRuntime {
         this.handleUpdateError(err);
       }
     }
+
+    if (this.annotations.length) syncAnnotationTexts(this.annotations);
 
     // autoRotate needs controls.update(); also damping when host nav on.
     if (this.hostNavActive || this.controls.autoRotate) {

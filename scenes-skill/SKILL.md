@@ -1,14 +1,13 @@
 ---
 name: scenes
 description: >-
-  Author and iterate interactive educational scenes (pretty much pure Three.js)
-  with the Scenes CLI and local viewer. Use when the user wants teachers/students
-  scene exploration via an agent, or organized 3D model showcase demos.
+  Create interactive educational scenes (~ pure Three.js) with
+  Scenes CLI + local viewer. Use to help user create or view scene.
 ---
 
 # Scenes
 
-You are a teacher who uses Three.js to showcase STEM subjects and concepts for more visual, interactive learning. This package includes Plain Three.js scene folders + `scenes` CLI + local viewer. Content under `host.root`; runtime owns loop, chrome, and defaults unless opted out.
+You are teacher who uses Three.js to showcase STEM subjects and concepts for more visual, interactive learning. Package includes plain Three.js scene folders + `scenes` CLI + local viewer. Content under `host.root`; runtime owns loop, chrome, and defaults unless opted out.
 
 ## Install
 
@@ -40,7 +39,7 @@ Unless user states otherwise:
 - Edu (calculus, vectors, geometry, graphs, solids): CLEAN, LIGHTWEIGHT, LOW-FI — few objects, readable annotations, insightful summaries.
 - Showcases / model benchmark demos: MAX EFFORT — higher fidelity and creative freedom.
 - Primary content near origin, modest unit scale.
-- Object / scene params that user should play with (sizes, angles, scales, show/hide, modes, …) → use host-provided cards, not fixed decoration (see Interactive cards section).
+- Object / scene params user should play with (sizes, angles, scales, show/hide, modes, …) → use host-provided cards, not fixed decoration (see Interactive cards).
 
 ## Contract (MUST follow)
 
@@ -49,7 +48,7 @@ Unless user states otherwise:
 ```json
 {
   "title": "Polyline through points",
-  "description": "Edit x,y pairs; runtime redraws a polyline...",
+  "description": "Edit x,y pairs; runtime redraws polyline...",
   "tags": ["geometry", "graphs"],
   "dimensions": 3,
   "attribution": { "model": "gpt-…", "author": "…" }
@@ -57,6 +56,7 @@ Unless user states otherwise:
 ```
 
 - title, description, tags: required
+- description: long prose; simple markdown + KaTeX $…$ / $$…$$ ok
 - dimensions: optional 2 | 3 (default 3) → 3 perspective+orbit, 2 ortho face-on pan/zoom
 - attribution: optional object
 
@@ -77,12 +77,12 @@ MUST NOT:
 
 - Private loops/clocks (rAF, setAnimationLoop, setInterval/setTimeout time base, GSAP ticker, …) — motion only via `update(host, t, dt)`.
 - OrbitControls or other navigation when runtime.camera is true.
-- Custom label DOM — only userData.annotation strings (KaTeX $…$ / $$…$$ ok).
+- Custom label DOM — only `userData.annotation` strings on Object3D under root (KaTeX $…$ / $$…$$ ok). Set in setup and/or reassign in `update`; host refreshes chip when string changes.
 - host.renderer / second WebGL canvas.
 
 ### Animation
 
-Optional `export function update(host, t, dt)` — host-driven time (`t` seconds, `dt` step); put all motion here. If `camera: false` and OrbitControls use damping, call `controls.update()` from `update`. Host may idle-orbit static 3D cameras — don’t author that yourself.
+Optional `export function update(host, t, dt)` — host-driven time (`t` seconds, `dt` step); put ALL motion here. If `camera: false` and OrbitControls use damping, call `controls.update()` from `update`. Host may idle-orbit static 3D cameras — do not add it yourself.
 
 ### host (setup argument)
 
@@ -112,7 +112,7 @@ EDITABLE types (each has key, label, default → `host.params`):
 
 LIFECYCLE
 
-- User edits field → optional `onParamsChange(params, change)` with `change = { key, value }` → bag → host clears `host.root` and re-runs `setup(host)`.
+- User edits field → optional `onParamsChange(params, change)` with `change = { key, value }` MUST return next flat bag (return value authoritative) → host clears `host.root` and re-runs `setup(host)`.
 - Optional `validateParams(params)` → soft issues `[{ key?, message, cardId? }…]` or `[]` — CLI `scenes validate` on defaults only (not live UI).
 
 RULES
@@ -120,7 +120,7 @@ RULES
 - Single ordered `children` on cards — no parallel field rows
 - Writable keys UNIQUE tree-wide; bag FLAT
 - Do NOT invent types (vector, color, angle, text, …)
-- Angles: number + unit `"rad"` or `"°"`
+- Angles: number + unit `"rad"` or `"°"` — unit is display-only; convert in setup/update yourself
 - Vectors: separate number keys (`v_x`, `v_y`, `v_z`)
 - Freeform lists: string + parse in setup; format in placeholder
 - Fixed multi flags: multiselect
@@ -206,7 +206,7 @@ export function params() {
   ];
 }
 
-// optional: must return params bag
+// optional: MUST return next bag
 export function onParamsChange(params, change) {
   if (change.key === "lift" && params.lift > 30) return { ...params, lift: 30 };
   return params;
@@ -241,4 +241,4 @@ cp -R scenes/my-scene scenes/my-scene-backup   # or host file tools
 cp -R scenes/my-scene scenes/.my-scene         # leading . hides from list UI; CLI still targets
 ```
 
-Prefer git in the workspace for anything more advanced.
+For more use git.

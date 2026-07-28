@@ -1,3 +1,137 @@
+/* Summary description: wrap in narrow sheet — no horizontal scroll */
+
+.summary-md {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.summary-md > :first-child {
+  margin-top: 0;
+}
+
+.summary-md > :last-child {
+  margin-bottom: 0;
+}
+
+.summary-md p,
+.summary-md ul,
+.summary-md ol,
+.summary-md blockquote,
+.summary-md pre,
+.summary-md table,
+.summary-md h1,
+.summary-md h2,
+.summary-md h3 {
+  margin: 0.5em 0;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Dense sheet: readable hierarchy without browser-size page titles */
+.summary-md h1,
+.summary-md h2,
+.summary-md h3 {
+  color: var(--foreground);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.summary-md h1 {
+  font-size: 1.15em;
+  margin-top: 0.75em;
+}
+
+.summary-md h2 {
+  font-size: 1.08em;
+  margin-top: 0.65em;
+}
+
+.summary-md h3 {
+  font-size: 1em;
+  margin-top: 0.55em;
+  font-weight: 600;
+}
+
+.summary-md ul,
+.summary-md ol {
+  padding-left: 1.25em;
+}
+
+.summary-md pre {
+  max-width: 100%;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  font-size: inherit;
+  padding: 0.4em 0.5em;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+  background: var(--muted);
+}
+
+.summary-md code {
+  font-size: inherit;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.summary-md pre code {
+  display: block;
+  max-width: 100%;
+  white-space: pre-wrap;
+  background: transparent;
+  padding: 0;
+}
+
+.summary-md :not(pre) > code {
+  padding: 0.1em 0.3em;
+  border-radius: 0.25rem;
+  background: var(--muted);
+  white-space: break-spaces;
+}
+
+.summary-md table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: inherit;
+}
+
+.summary-md th,
+.summary-md td {
+  border: 1px solid var(--border);
+  padding: 0.2em 0.45em;
+  text-align: left;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  vertical-align: top;
+}
+
+.summary-md a {
+  color: inherit;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* KaTeX can be wide; allow wrap / clip to sheet width */
+.summary-md .katex-display {
+  max-width: 100%;
+  overflow-x: hidden;
+  margin: 0.5em 0;
+}
+
+.summary-md .katex {
+  max-width: 100%;
+  white-space: normal;
+}
+
 /* WebGL overlay labels (CSS2D) — not shadcn chrome */
 
 .css2d-label {

@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import type { SceneMetadata } from "../runtime/loadScene";
-import { MathText } from "../math/renderMath";
+import { DescriptionText } from "../math/renderDescription.tsx";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -60,9 +60,9 @@ export function SummaryPanel({
           )}
         </Button>
       </div>
-      <MathText
+      <DescriptionText
         text={metadata.description}
-        className="text-xs/relaxed text-muted-foreground [&_.katex]:text-foreground"
+        className="text-muted-foreground [&_.katex]:text-foreground"
       />
       {metadata.tags.length > 0 && (
         <div className="flex min-w-0 flex-wrap gap-1.5">
