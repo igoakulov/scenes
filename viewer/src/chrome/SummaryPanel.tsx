@@ -4,10 +4,7 @@ import type { SceneMetadata } from "../runtime/loadScene";
 import { DescriptionText } from "../math/renderDescription.tsx";
 import { Button } from "@/components/ui/button";
 
-/**
- * Scene summary — type scale matches base-mira Card / Empty / Item.
- * Copy control pastes `id: "title"` for agent reference.
- */
+/** Copy control pastes `id: "title"` for agent reference. */
 export function SummaryPanel({
   id,
   metadata,

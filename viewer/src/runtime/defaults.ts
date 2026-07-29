@@ -1,4 +1,3 @@
-/** Flat bag values — shared with CLI types. */
 export type { ParamValue } from "../../../src/types";
 import type { ParamValue } from "../../../src/types";
 

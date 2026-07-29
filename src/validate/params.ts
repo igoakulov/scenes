@@ -113,7 +113,7 @@ function rejectReadOnlyKey(
 }
 
 export interface ValidateParamsTreeResult {
-  /** Parsed tree when shape is fully valid. */
+  /** Set only when the tree shape is fully valid. */
   nodes?: ParamsNode[];
   /** Writable fields in tree order (for defaults / validateParams). */
   writable?: WritableParamField[];
@@ -481,7 +481,6 @@ function validateString(
   return field;
 }
 
-/** Flat defaults object from writable fields only. */
 export function defaultsFromWritable(
   writable: WritableParamField[],
 ): Record<string, ParamValue> {

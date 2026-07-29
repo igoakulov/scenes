@@ -1,14 +1,22 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { CheckIcon, CopyIcon } from "lucide-react";
 import { userFacingError } from "../runtime/viewerError";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export interface SceneListEntry {
   id: string;
   title?: string;
 }
 
-/** Placeholder until skill package URL is final (step 4 / publish). */
-const SCENES_SKILL_URL = "https://github.com/igoakulov/scenes"; // TODO: skill install URL
+type ExamplePrompt = {
+  id: string;
+  title: string;
+  body: string;
+};
+
+const SCENES_SKILL_URL =
+  "https://github.com/igoakulov/scenes/blob/main/scenes-skill/SKILL.md";
 
 async function fetchSceneList(): Promise<SceneListEntry[]> {
   const res = await fetch("/api/scenes", { cache: "no-store" });
@@ -28,6 +36,26 @@ async function fetchSceneList(): Promise<SceneListEntry[]> {
   );
 }
 
+async function fetchExamplePrompts(): Promise<ExamplePrompt[]> {
+  const res = await fetch("/api/example-prompts", { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  const data = (await res.json()) as unknown;
+  if (!Array.isArray(data)) {
+    return [];
+  }
+  return data.filter(
+    (row): row is ExamplePrompt =>
+      row !== null &&
+      typeof row === "object" &&
+      typeof (row as ExamplePrompt).id === "string" &&
+      typeof (row as ExamplePrompt).title === "string" &&
+      typeof (row as ExamplePrompt).body === "string" &&
+      (row as ExamplePrompt).body.length > 0,
+  );
+}
+
 function SectionHeading({
   id,
   children,
@@ -35,7 +63,6 @@ function SectionHeading({
   id?: string;
   children: string;
 }) {
-  // base-mira SidebarGroupLabel: text-xs muted, sentence case (no uppercase).
   return (
     <h2
       id={id}
@@ -46,8 +73,76 @@ function SectionHeading({
   );
 }
 
+function PromptCard({ prompt }: { prompt: ExamplePrompt }) {
+  const [copied, setCopied] = useState(false);
+  const copy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(prompt.body);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore
+    }
+  }, [prompt.body]);
+
+  return (
+    <div className="min-w-0 rounded-md border border-border px-2 py-1.5">
+      <div className="flex min-w-0 items-start gap-1">
+        <p className="m-0 min-w-0 flex-1 text-xs font-medium text-foreground">
+          {prompt.title}
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          className="shrink-0 text-muted-foreground"
+          title={copied ? "Copied" : "Copy prompt"}
+          aria-label={copied ? "Copied" : `Copy prompt: ${prompt.title}`}
+          onClick={() => void copy()}
+        >
+          {copied ? (
+            <CheckIcon data-icon="inline-start" />
+          ) : (
+            <CopyIcon data-icon="inline-start" />
+          )}
+        </Button>
+      </div>
+      <pre className="sheet-selectable m-0 mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap break-words font-sans text-xs/relaxed text-muted-foreground">
+        {prompt.body}
+      </pre>
+    </div>
+  );
+}
+
+function EmptyLibrary({ prompts }: { prompts: ExamplePrompt[] | null }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-3 px-2">
+      <p className="sheet-selectable m-0 text-xs/relaxed text-muted-foreground">
+        Ask your AI agent to create a scene with{" "}
+        <a
+          href={SCENES_SKILL_URL}
+          className="text-foreground/90 hover:text-foreground"
+          target="_blank"
+          rel="noreferrer"
+        >
+          scenes-skill
+        </a>
+        . Copy an example prompt below, or describe your own topic.
+      </p>
+      {prompts && prompts.length > 0 && (
+        <div className="flex min-w-0 flex-col gap-2">
+          {prompts.map((p) => (
+            <PromptCard key={p.id} prompt={p} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
   const [entries, setEntries] = useState<SceneListEntry[] | null>(null);
+  const [prompts, setPrompts] = useState<ExamplePrompt[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,7 +151,18 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
     void (async () => {
       try {
         const list = await fetchSceneList();
-        if (!cancelled) setEntries(list);
+        if (cancelled) return;
+        setEntries(list);
+        if (list.length === 0) {
+          try {
+            const p = await fetchExamplePrompts();
+            if (!cancelled) setPrompts(p);
+          } catch {
+            if (!cancelled) setPrompts([]);
+          }
+        } else if (!cancelled) {
+          setPrompts(null);
+        }
       } catch (err) {
         if (!cancelled) {
           setEntries(null);
@@ -84,20 +190,7 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
       <p className="m-0 px-2 text-xs text-muted-foreground">Loading…</p>
     );
   } else if (entries.length === 0) {
-    body = (
-      <p className="sheet-selectable m-0 px-2 text-xs/relaxed text-muted-foreground">
-        Ask your AI agent to create your first scene with{" "}
-        <a
-          href={SCENES_SKILL_URL}
-          className="text-foreground underline underline-offset-4 hover:text-primary"
-          target="_blank"
-          rel="noreferrer"
-        >
-          scenes-skill
-        </a>
-        .
-      </p>
-    );
+    body = <EmptyLibrary prompts={prompts} />;
   } else {
     body = (
       <ul className="m-0 flex list-none flex-col gap-px p-0">
@@ -109,7 +202,6 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
                 type="button"
                 title={label}
                 className={cn(
-                  // Density matches base-mira DropdownMenuItem / SidebarMenu sm: text-xs, min-h-7.
                   "flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-xs/relaxed",
                   "text-foreground hover:bg-muted",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -131,7 +223,6 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      {/* Later: Collections section — same SectionHeading pattern */}
       <section
         className="flex min-w-0 flex-col gap-1.5"
         aria-labelledby="library-scenes-heading"

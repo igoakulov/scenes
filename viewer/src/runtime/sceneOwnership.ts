@@ -1,6 +1,5 @@
 import * as THREE from "three";
 
-/** Any THREE.Light under root (agent lighting). */
 export function rootHasAgentLight(root: THREE.Object3D): boolean {
   let found = false;
   root.traverse((o) => {
@@ -38,4 +37,15 @@ export function takeAgentStartCamera(root: THREE.Object3D): StartView | null {
   agent.parent?.remove(agent);
 
   return { position, target };
+}
+
+/** Strip all cameras under root; return pose of the first (if any). */
+export function stripAgentCameras(root: THREE.Object3D): StartView | null {
+  let first: StartView | null = null;
+  for (;;) {
+    const view = takeAgentStartCamera(root);
+    if (!view) break;
+    if (!first) first = view;
+  }
+  return first;
 }

@@ -11,6 +11,10 @@
     "dist",
     "viewer/dist",
     "scenes-skill",
+    "examples/example-linear-algebra",
+    "examples/example-pendulum-physics",
+    "examples/example-solar-system",
+    "examples/prompts",
     "LICENSE",
     "README.md"
   ],

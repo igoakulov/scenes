@@ -22,7 +22,6 @@ body,
   -webkit-user-select: none;
 }
 
-/* Copyable / editable text */
 .app-shell input,
 .app-shell textarea,
 .app-shell [contenteditable="true"],
@@ -129,8 +128,7 @@ body,
   background: var(--card);
 }
 
-/* try B1: native overflow instead of Base UI ScrollArea.
-   Dark thin thumb (approx. prior ScrollBar look). Hover-fade is limited on native. */
+/* Native overflow (not Base UI ScrollArea). Thin dark thumb; hover-fade limited. */
 .sheet-scroll {
   height: 100%;
   min-height: 0;

@@ -33,12 +33,10 @@ const IGNORED_SCENE_ENTRIES = new Set(
   ].map((s) => s.toLowerCase()),
 );
 
-/** True for visible library ids (`my-scene`). */
 export function isKebabCaseId(id: string): boolean {
   return KEBAB_CASE.test(id);
 }
 
-/** True for scene folder ids, including hidden (`.my-scene`). */
 export function isSceneId(id: string): boolean {
   return SCENE_ID.test(id);
 }
@@ -47,7 +45,6 @@ export function isHiddenSceneId(id: string): boolean {
   return id.startsWith(".") && SCENE_ID.test(id);
 }
 
-/** OS/VCS junk — never treated as a scene id by list. */
 export function isIgnoredSceneEntry(name: string): boolean {
   return IGNORED_SCENE_ENTRIES.has(name.toLowerCase());
 }
@@ -60,12 +57,10 @@ export function sceneDir(workspace: string, id: string): string {
   return join(scenesDir(workspace), id);
 }
 
-/** Ensure workspace root has a scenes/ directory. */
 export async function ensureWorkspaceLayout(workspace: string): Promise<void> {
   await mkdir(scenesDir(workspace), { recursive: true });
 }
 
-/** True when workspace has a `scenes/` directory (may be empty). */
 export async function hasScenesDir(workspace: string): Promise<boolean> {
   try {
     const s = await stat(scenesDir(workspace));

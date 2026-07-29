@@ -3,7 +3,6 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { AppConfig } from "./types.js";
 
-/** Override for tests. */
 export function getConfigDir(): string {
   if (process.env.SCENES_CONFIG_DIR) {
     return process.env.SCENES_CONFIG_DIR;

@@ -33,7 +33,6 @@ export interface LoadedScene {
   params: Record<string, ParamValue>;
   /** Soft-parsed params() tree for Explore UI (unknown types skipped). */
   paramsTree: ParamsNode[];
-  /** Resolved host feature flags (defaults all true). */
   runtime: RuntimeFlags;
 }
 

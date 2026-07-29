@@ -45,7 +45,7 @@ export function issuesForRuntimeExport(raw: unknown): RuntimeFlagIssue[] {
   return issues;
 }
 
-/** Resolve module export into flags. Invalid shapes throw (viewer load path). */
+/** Hard-resolve for the viewer load path. Invalid shapes throw (unlike soft CLI issues). */
 export function resolveRuntimeFlags(raw: unknown): RuntimeFlags {
   const issues = issuesForRuntimeExport(raw);
   if (issues.length > 0) {

@@ -3,7 +3,6 @@ import { join } from "node:path";
 import { parseMetadata } from "./validate/metadata.js";
 import { listSceneIds, sceneDir } from "./workspace.js";
 
-/** One row for Library list / GET /api/scenes. */
 export interface SceneListEntry {
   id: string;
   /** Present only when metadata.json parses cleanly. */

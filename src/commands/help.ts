@@ -9,7 +9,7 @@ export async function cmdHelp(): Promise<number> {
   console.log(`scenes — agent-authored Three.js scenes
 
 cmds:
-  init [path] [--force]  set workspace (path|cwd)
+  init [path] [--force]  set workspace (path|config|cwd)
   list                   scenes (meta only)
   validate [id]          one or all
   show [id]              serve viewer (validate gate if id); Ctrl+C stop
@@ -21,7 +21,7 @@ config: ~/.config/scenes/config.json  (win: %APPDATA%\\scenes\\)
 meta: title, description, tags[]; optional dimensions 2|3 (default 3)
 
 output (see docs/shell.md):
-  workspace <abs>
+  workspace <abs>   or  workspace (from config) <abs>  (bare init)
   @ scenes/<id>
   - …          list: title | ERR; validate/show: ok | path: msg
   listen <url>           show ready (opens browser)

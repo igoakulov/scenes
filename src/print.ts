@@ -1,17 +1,17 @@
 import { relative } from "node:path";
 import { sceneDir } from "./workspace.js";
 
-/** Absolute workspace root (once per command that reports scenes). */
-export function printWorkspace(workspace: string): void {
-  console.log(`workspace ${workspace}`);
+/** fromConfig → `workspace (from config) <abs>`; else `workspace <abs>`. */
+export function printWorkspace(workspace: string, fromConfig = false): void {
+  console.log(
+    fromConfig ? `workspace (from config) ${workspace}` : `workspace ${workspace}`,
+  );
 }
 
-/** Help / cold-start: no config yet. */
 export function printWorkspaceNone(): void {
   console.log("workspace (none — run scenes init)");
 }
 
-/** Help: config unreadable. */
 export function printWorkspaceErr(message: string): void {
   console.log(`workspace ERR ${message}`);
 }
@@ -39,17 +39,14 @@ export function formatIssueLines(
   return issues.map((i) => `${i.path}: ${i.message}`);
 }
 
-/** stderr: hint: <msg> */
 export function printHint(msg: string): void {
   console.error(`hint: ${msg}`);
 }
 
-/** stderr: fail <failed>/<total> */
 export function printFail(failed: number, total: number): void {
   console.error(`fail ${failed}/${total}`);
 }
 
-/** stdout: listen <url> — show server (and similar). */
 export function printListen(url: string): void {
   console.log(`listen ${url}`);
 }

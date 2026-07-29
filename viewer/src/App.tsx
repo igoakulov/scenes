@@ -5,7 +5,6 @@ import { ExploreTools } from "./chrome/ExploreTools";
 import { LibraryPanel } from "./chrome/LibraryPanel";
 import { ParamsPanel } from "./chrome/params";
 import { Button } from "@/components/ui/button";
-// Shell: B5 hand-rolled tabs (theme tokens); B1 .sheet-scroll (not Base UI ScrollArea/Tabs)
 import { loadScene, type LoadedScene } from "./runtime/loadScene";
 import type { ParamValue } from "./runtime/defaults";
 import {
@@ -17,7 +16,6 @@ import { gridForDimensions } from "./runtime/grid";
 import { userFacingError } from "./runtime/viewerError";
 import { cn } from "@/lib/utils";
 
-/** Sheet body tab — always all three; Summary/Explore need a selected scene. */
 type SheetTab = "library" | "summary" | "explore";
 
 function readIdFromUrl(): string | null {
@@ -32,6 +30,24 @@ const NO_SCENE_KEY = "__none__";
 
 function gridKey(sceneId: string | null): string {
   return sceneId ?? NO_SCENE_KEY;
+}
+
+function paramBagsEqual(
+  a: Record<string, ParamValue>,
+  b: Record<string, ParamValue>,
+): boolean {
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  for (const k of keys) {
+    const av = a[k];
+    const bv = b[k];
+    if (Array.isArray(av) && Array.isArray(bv)) {
+      if (av.length !== bv.length || av.some((x, i) => x !== bv[i])) return false;
+    } else if (av !== bv) {
+      return false;
+    }
+  }
+  return true;
 }
 
 export function App() {
@@ -78,7 +94,6 @@ export function App() {
     };
   }, []);
 
-  // Simple global keys: / panel, r reset when host camera on, Space play/pause
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
@@ -219,7 +234,6 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    // Drop pending remount when scene changes.
     if (remountTimerRef.current) clearTimeout(remountTimerRef.current);
     remountTimerRef.current = null;
     pendingParamsRef.current = null;
@@ -249,6 +263,9 @@ export function App() {
             return prev;
           }
         }
+
+        // Blur after number edit re-commits the same value; remount then kills the first orbit drag.
+        if (paramBagsEqual(prev, next)) return prev;
 
         pendingParamsRef.current = next;
         if (remountTimerRef.current) clearTimeout(remountTimerRef.current);

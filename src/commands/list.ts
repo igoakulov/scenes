@@ -5,7 +5,6 @@ import { printHint, printSceneBlock, printWorkspace } from "../print.js";
 import { parseMetadata } from "../validate/metadata.js";
 import { hasScenesDir, listSceneIds, sceneDir } from "../workspace.js";
 
-/** id → title (or ERR). Tags/dimensions: read metadata.json when needed. */
 export async function cmdList(): Promise<number> {
   const workspace = await requireWorkspace();
   printWorkspace(workspace);

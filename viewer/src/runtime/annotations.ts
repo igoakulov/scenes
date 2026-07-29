@@ -9,9 +9,6 @@ export interface AnnotationHandle {
   lastText: string;
 }
 
-/**
- * Discover Object3D with userData.annotation string under root; attach CSS2D chips.
- */
 export function discoverAnnotations(root: THREE.Object3D): AnnotationHandle[] {
   const found: AnnotationHandle[] = [];
 
@@ -34,7 +31,6 @@ export function discoverAnnotations(root: THREE.Object3D): AnnotationHandle[] {
   return found;
 }
 
-/** Re-render chips when `userData.annotation` string changes (e.g. from update). */
 export function syncAnnotationTexts(handles: AnnotationHandle[]): void {
   for (const h of handles) {
     const text = h.object.userData?.annotation;

@@ -2,11 +2,9 @@ import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 
 export interface GridState {
-  /** Spacing between grid lines. */
   step: number;
   /** Half-width from origin (grid runs −size…+size). */
   size: number;
-  /** XZ floor plane. */
   showFloor: boolean;
   showXY: boolean;
   showYZ: boolean;
@@ -47,9 +45,6 @@ export function gridForDimensions(
 const GRID_COLOR = 0xaab2bd;
 const AXIS_COLOR = 0xe6e8eb;
 
-/**
- * Runtime-owned Grid: optional planes; axes only for visible planes.
- */
 export class GridController {
   readonly group = new THREE.Group();
   private state: GridState = { ...DEFAULT_GRID };
@@ -147,7 +142,6 @@ function makeAxes(
   const arrowLen = Math.min(0.35, len * 0.12);
 
   const addAxis = (dir: THREE.Vector3, label: string) => {
-    // Full line through origin: −extent … +extent
     const pos = dir.clone().multiplyScalar(len);
     const neg = dir.clone().multiplyScalar(-len);
     const geo = new THREE.BufferGeometry().setFromPoints([neg, pos]);

@@ -1,4 +1,6 @@
+import { resolve } from "node:path";
 import { readConfig, writeConfig } from "../config.js";
+import { seedExampleScenes } from "../examples.js";
 import { printHint, printWorkspace } from "../print.js";
 import {
   ensureWorkspaceLayout,
@@ -9,8 +11,6 @@ export async function cmdInit(
   pathArg: string | undefined,
   force: boolean,
 ): Promise<number> {
-  const workspace = resolveWorkspacePath(pathArg);
-
   let current: Awaited<ReturnType<typeof readConfig>>;
   try {
     current = await readConfig();
@@ -23,11 +23,24 @@ export async function cmdInit(
     current = null;
   }
 
+  const pathGiven = pathArg !== undefined && pathArg !== "";
+  // Bare init + config: heal configured workspace (not cwd). --force uses path/cwd.
+  let fromConfig = false;
+  let workspace: string;
+  if (!pathGiven && !force && current) {
+    workspace = resolve(current.workspace);
+    fromConfig = true;
+  } else {
+    workspace = resolveWorkspacePath(pathArg);
+  }
+
   if (current && !force) {
-    if (current.workspace === workspace) {
+    if (resolve(current.workspace) === workspace) {
       await ensureWorkspaceLayout(workspace);
+      const created = await seedExampleScenes(workspace);
       console.log("init ok (exists)");
-      printWorkspace(workspace);
+      printWorkspace(workspace, fromConfig);
+      printCreatedScenes(created);
       return 0;
     }
     console.error(`workspace set: ${current.workspace}`);
@@ -36,12 +49,19 @@ export async function cmdInit(
   }
 
   await ensureWorkspaceLayout(workspace);
+  const created = await seedExampleScenes(workspace);
   await writeConfig({
     workspace,
     ...(current?.port !== undefined ? { port: current.port } : {}),
   });
 
   console.log(force && current ? "init ok (reconfigured)" : "init ok");
-  printWorkspace(workspace);
+  printWorkspace(workspace, false);
+  printCreatedScenes(created);
   return 0;
+}
+
+function printCreatedScenes(ids: string[]): void {
+  if (ids.length === 0) return;
+  console.log(`created scenes: ${ids.join(", ")}`);
 }

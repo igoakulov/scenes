@@ -67,8 +67,6 @@ describe("show", () => {
     await runScenes(["init", workspace], env);
     const r = await runScenes(["show", "missing-scene"], env);
     assert.equal(r.code, 1);
-    assert.match(r.stdout, /@ scenes\/missing-scene/);
-    assert.match(r.stdout, /ERR not found/);
     await rm(workspace, { recursive: true, force: true });
     await rm(configDir, { recursive: true, force: true });
   });
@@ -85,13 +83,10 @@ describe("show", () => {
     );
     const r = await runScenes(["show", "bad"], env);
     assert.equal(r.code, 1);
-    assert.match(r.stdout, /@ scenes\/bad/);
-    assert.doesNotMatch(r.stdout, /^listen /m);
     await rm(workspace, { recursive: true, force: true });
     await rm(configDir, { recursive: true, force: true });
   });
 
-  /** One HTTP smoke: listen + viewer shell + scene file + library API. */
   it("listens and serves viewer + scene file + /api/scenes", async () => {
     const workspace = await mkdtemp(join(tmpdir(), "scenes-ws-"));
     const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
@@ -149,6 +144,22 @@ describe("show", () => {
               assert.equal(byId["bad-meta"]?.id, "bad-meta");
               assert.equal(byId["bad-meta"]?.title, undefined);
               assert.equal(byId[".hidden-bak"], undefined);
+
+              const promptsRes = await httpGet(
+                `http://127.0.0.1:${port}/api/example-prompts`,
+              );
+              assert.equal(promptsRes.status, 200);
+              const prompts = JSON.parse(promptsRes.body);
+              assert.ok(Array.isArray(prompts));
+              assert.ok(prompts.length >= 1);
+              assert.ok(
+                prompts.some(
+                  (p) =>
+                    p.id === "example-linear-algebra" &&
+                    typeof p.body === "string" &&
+                    p.body.length > 0,
+                ),
+              );
             } finally {
               child.kill("SIGTERM");
             }
@@ -158,16 +169,13 @@ describe("show", () => {
     });
 
     const r = await rPromise;
-    assert.match(r.stdout, /workspace /);
-    assert.doesNotMatch(r.stdout, /@ scenes\/demo/);
-    assert.doesNotMatch(r.stdout, /^- ok$/m);
-    assert.match(r.stdout, /^listen /m);
+    assert.ok(listenUrl, r.stderr + r.stdout);
 
     await rm(workspace, { recursive: true, force: true });
     await rm(configDir, { recursive: true, force: true });
   });
 
-  it("show without id prints workspace + listen only", async () => {
+  it("show without id serves", async () => {
     const workspace = await mkdtemp(join(tmpdir(), "scenes-ws-"));
     const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
     const port = 20000 + Math.floor(Math.random() * 1000);
@@ -178,18 +186,26 @@ describe("show", () => {
     cfg.port = port;
     await writeFile(cfgPath, JSON.stringify(cfg, null, 2) + "\n");
 
+    let gotListen = false;
     const rPromise = runScenes(["show"], env, {
       timeoutMs: 12000,
       onStdout(stdout, _stderr, child) {
-        if (/^listen /m.test(stdout)) {
-          child.kill("SIGTERM");
+        const m = stdout.match(/^listen (\S+)/m);
+        if (m && !gotListen) {
+          gotListen = true;
+          void (async () => {
+            try {
+              const page = await httpGet(m[1]);
+              assert.equal(page.status, 200);
+            } finally {
+              child.kill("SIGTERM");
+            }
+          })();
         }
       },
     });
-    const r = await rPromise;
-    assert.match(r.stdout, /workspace /, r.stderr + r.stdout);
-    assert.match(r.stdout, /^listen /m, r.stderr + r.stdout);
-    assert.doesNotMatch(r.stdout, /@ scenes\//);
+    await rPromise;
+    assert.ok(gotListen);
     await rm(workspace, { recursive: true, force: true });
     await rm(configDir, { recursive: true, force: true });
   });

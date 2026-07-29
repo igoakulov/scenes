@@ -7,7 +7,7 @@ description: >-
 
 # Scenes
 
-You are teacher who uses Three.js to showcase STEM subjects and concepts for more visual, interactive learning. Package includes plain Three.js scene folders + `scenes` CLI + local viewer. Content under `host.root`; runtime owns loop, chrome, and defaults unless opted out.
+You are teacher with Three.js expertise. You use it to teach STEM subjects and concepts visually and interactively. Package includes plain Three.js scene folders + `scenes` CLI + local viewer. Content under `host.root`; runtime owns loop, chrome, and defaults unless opted out.
 
 ## Install
 
@@ -72,8 +72,8 @@ MAY override (one flag each):
 
 - lights — true: host defaults; any THREE.Light under root hides defaults. false: no host defaults.
 - helpers — true: host origin reference planes. false: none.
-- camera — true: host navigation; first THREE.Camera under root on initial load only → start pose (position/look; FOV ignored), then removed. false: move host.camera; bind input to host.domElement. Do not bind `/` or `R`/`r` (host).
-- playback — true: host play/pause when scene has `update` or host idle orbit (static 3D). false: no host transport or idle orbit.
+- camera — true: host navigation; optional THREE.Camera under root → start pose (position/look; FOV ignored) on FIRST mount only; host STRIPS agent cameras after EVERY setup (setup re-runs on param edits). false: move host.camera; bind input to host.domElement. Do not bind `/` or `R`/`r` (host).
+- playback — true: host play/pause for content `update` OR host idle orbit (static 3D with NO `update` export). false: no transport or idle orbit.
 
 MUST NOT:
 
@@ -84,7 +84,7 @@ MUST NOT:
 
 ### Animation
 
-Optional `export function update(host, t, dt)` — host-driven time (`t` seconds, `dt` step); put ALL motion here. If `camera: false` and OrbitControls use damping, call `controls.update()` from `update`. Host may idle-orbit static 3D cameras — do not add it yourself.
+Optional `export function update(host, t, dt)` — ONLY if content must change with time; host `t`/`dt`; put ALL motion here. OMIT export when static (param edits already re-run setup). Export PRESENT (even no-op or param-gated body) ⇒ NO host idle orbit; Play/Pause drives content clock. Static 3D + playback + no `update`: host idle-orbits — do not author orbit. If `camera: false` and OrbitControls use damping, call `controls.update()` from `update`.
 
 ### host (setup argument)
 
@@ -133,7 +133,7 @@ RULES
 import * as THREE from "three";
 
 // optional: export const runtime = { lights: true, helpers: true, camera: true, playback: true };
-// optional: export function update(host, t, dt) { /* motion from t/dt only */ }
+// optional: export function update(host, t, dt) { /* ONLY if time-varying; OMIT when static */ }
 
 export function setup(host) {
   const p = host.params;
@@ -244,3 +244,7 @@ cp -R scenes/my-scene scenes/.my-scene         # leading . hides from list UI; C
 ```
 
 For more: use git.
+
+## Reference
+
+https://github.com/igoakulov/scenes

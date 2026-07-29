@@ -23,17 +23,16 @@ import {
   DEFAULT_RUNTIME_FLAGS,
   type RuntimeFlags,
 } from "./runtimeFlags";
-import { rootHasAgentLight, takeAgentStartCamera } from "./sceneOwnership";
+import { rootHasAgentLight, stripAgentCameras } from "./sceneOwnership";
 import { SceneSideEffects } from "./sceneSideEffects";
 
 /** Match shadcn dark --background (zinc). */
 const BG = 0x18181b;
 
-/** Modest OrbitControls autoRotate for host idle orbit (static 3D). */
 const IDLE_ORBIT_SPEED = 1.0;
 
 export interface PlaybackUi {
-  /** Show Play/Pause when transport is eligible. */
+  /** True when Play/Pause chrome should show (transport eligible). */
   show: boolean;
   playing: boolean;
 }
@@ -69,7 +68,6 @@ export class SceneRuntime {
   /** Whether host OrbitControls listeners are currently attached. */
   private hostControlsConnected = true;
 
-  /** Active scene module (null when empty shell). */
   private loaded: LoadedScene | null = null;
   private sceneParams: Record<string, ParamValue> = {};
   /** Sim clock (seconds). Advances only while playing with `update`. */
@@ -128,7 +126,7 @@ export class SceneRuntime {
     this.controls.dampingFactor = 0.08;
     this.controls.autoRotateSpeed = IDLE_ORBIT_SPEED;
     this.controls.target.copy(this.defaultTarget);
-    // Package 2: any host-nav gesture permanently pauses idle orbit until Play.
+    // Any host-nav gesture permanently pauses idle orbit until Play.
     this.controls.addEventListener("start", this.onControlsStart);
     this.applyCameraMode(3);
 
@@ -138,7 +136,6 @@ export class SceneRuntime {
     this.loop();
   }
 
-  /** Resolved flags for the mounted scene (defaults when empty shell). */
   getRuntimeFlags(): RuntimeFlags {
     return { ...this.flags };
   }
@@ -151,7 +148,6 @@ export class SceneRuntime {
     this.grid.setState(partial);
   }
 
-  /** Transport chrome state for Explore + Space. */
   getPlaybackUi(): PlaybackUi {
     return {
       show: this.isTransportEligible(),
@@ -159,7 +155,6 @@ export class SceneRuntime {
     };
   }
 
-  /** Subscribe to play/pause / eligibility changes. Returns unsubscribe. */
   subscribePlayback(cb: () => void): () => void {
     this.playbackListeners.add(cb);
     return () => {
@@ -207,6 +202,27 @@ export class SceneRuntime {
   private tearDownSceneContent(): void {
     this.sideEffects.stop();
     this.clearRoot();
+    // Listener GC can strip OrbitControls pointermove/up; reconnect host nav.
+    if (this.hostNavActive) this.reassertHostControls();
+  }
+
+  private reassertHostControls(): void {
+    this.controls.disconnect();
+    // Three disconnect() does not clear _pointers / state; stale drag skips move/up rebind.
+    const c = this.controls as OrbitControls & {
+      _pointers?: unknown[];
+      _pointerPositions?: Record<string, unknown>;
+      state: number;
+    };
+    if (Array.isArray(c._pointers)) c._pointers.length = 0;
+    if (c._pointerPositions && typeof c._pointerPositions === "object") {
+      for (const k of Object.keys(c._pointerPositions)) delete c._pointerPositions[k];
+    }
+    c.state = -1; // OrbitControls _STATE.NONE
+    this.controls.connect();
+    this.hostControlsConnected = true;
+    this.controls.enabled = true;
+    this.controls.update();
   }
 
   mountScene(loaded: LoadedScene): void {
@@ -248,7 +264,6 @@ export class SceneRuntime {
     this.runSetup(loaded, params, { adoptStartCamera: false });
     // Keep playing; force on if content update exists (playback:false still runs).
     if (this.hasUpdate()) {
-      // keep this.playing as-is when transport chrome exists; else always on
       if (!this.flags.playback) this.playing = true;
     } else if (!this.isIdleOrbitEligible()) {
       this.playing = false;
@@ -273,8 +288,15 @@ export class SceneRuntime {
       );
     }
     this.applyDefaultLightsPolicy();
-    if (opts.adoptStartCamera && this.flags.camera) {
-      this.adoptStartCameraFromRoot();
+    if (this.flags.camera) {
+      const view = stripAgentCameras(this.root);
+      if (opts.adoptStartCamera && view) {
+        this.defaultCamPos.copy(view.position);
+        this.defaultTarget.copy(view.target);
+        this.camera.position.copy(view.position);
+        this.controls.target.copy(view.target);
+        if (this.hostNavActive) this.controls.update();
+      }
     }
     this.annotations = discoverAnnotations(this.root);
   }
@@ -345,7 +367,6 @@ export class SceneRuntime {
     for (const cb of this.playbackListeners) cb();
   }
 
-  /** Host nav, grid visibility from current flags. */
   private applyHostPolicy(): void {
     this.setHostNavActive(this.flags.camera);
     this.grid.group.visible = this.flags.helpers;
@@ -369,9 +390,6 @@ export class SceneRuntime {
     }
   }
 
-  /**
-   * Default lights: off when lights flag false; else on when no agent Light under root.
-   */
   private applyDefaultLightsPolicy(): void {
     if (!this.flags.lights) {
       for (const light of this.defaultLights) light.visible = false;
@@ -381,20 +399,6 @@ export class SceneRuntime {
     for (const light of this.defaultLights) {
       light.visible = !agentLit;
     }
-  }
-
-  /**
-   * Optional agent Camera under root → initial pose only; removed after copy.
-   * Only when runtime.camera === true.
-   */
-  private adoptStartCameraFromRoot(): void {
-    const view = takeAgentStartCamera(this.root);
-    if (!view) return;
-    this.defaultCamPos.copy(view.position);
-    this.defaultTarget.copy(view.target);
-    this.camera.position.copy(view.position);
-    this.controls.target.copy(view.target);
-    if (this.hostNavActive) this.controls.update();
   }
 
   /** No scene content — Grid + default lights remain (runtime-owned). */

@@ -1,6 +1,5 @@
 import { spawn } from "node:child_process";
 
-/** Open URL in the default system browser (best-effort). */
 export function openBrowser(url: string): void {
   const platform = process.platform;
   try {

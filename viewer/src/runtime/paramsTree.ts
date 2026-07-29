@@ -33,7 +33,6 @@ import type {
   StringParamField,
 } from "../../../src/types";
 
-/** Soft-parse params() return; skip unknown / incomplete nodes. */
 export function readParamsTree(raw: unknown): ParamsNode[] {
   if (!Array.isArray(raw)) return [];
   const out: ParamsNode[] = [];

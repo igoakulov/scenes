@@ -43,10 +43,6 @@ export class SceneSideEffects {
     return this.active;
   }
 
-  /**
-   * Begin tracking on the host canvas, window, and document.
-   * No-op if already active (call stop first).
-   */
   start(canvas: EventTarget): void {
     if (this.active) return;
     this.active = true;

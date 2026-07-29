@@ -1,6 +1,5 @@
 import type { LabelValue, ParamValue } from "./types.js";
 
-/** Resolve a label for display (string as-is; function called with flat params). */
 export function resolveLabelValue(
   value: LabelValue,
   params: Record<string, ParamValue>,

@@ -3,18 +3,13 @@ import { access, readFile, stat } from "node:fs/promises";
 import http from "node:http";
 import { createRequire } from "node:module";
 import { dirname, extname, join, normalize, relative, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
 import { pipeline } from "node:stream/promises";
 import { listSceneEntries } from "../catalog.js";
+import { loadExamplePrompts, packageRoot } from "../examples.js";
 
 const require = createRequire(import.meta.url);
 
-/** Package root (…/scenes), whether running from src or dist. */
-export function packageRoot(): string {
-  const here = dirname(fileURLToPath(import.meta.url));
-  // dist/server → ../.. ; src/server when ts-node-like → ../..
-  return resolve(here, "..", "..");
-}
+export { packageRoot };
 
 export function viewerDistDir(root = packageRoot()): string {
   return join(root, "viewer", "dist");
@@ -51,7 +46,6 @@ function contentType(filePath: string): string {
   return MIME[extname(filePath).toLowerCase()] ?? "application/octet-stream";
 }
 
-/** Basic CSP for local serve-only viewer. */
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
@@ -232,7 +226,22 @@ async function handleRequest(
       return;
     }
 
-    // Workspace scene files: /ws/scenes/<id>/...
+    // Copy-ready starter prompts (package examples/prompts) for empty Library.
+    if (pathname === "/api/example-prompts") {
+      const prompts = await loadExamplePrompts();
+      const body = JSON.stringify(prompts);
+      setCommonHeaders(res);
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      if (req.method === "HEAD") {
+        res.setHeader("Content-Length", String(Buffer.byteLength(body)));
+        res.end();
+        return;
+      }
+      res.end(body);
+      return;
+    }
+
     if (pathname === "/ws" || pathname.startsWith("/ws/")) {
       const rest = pathname === "/ws" ? "" : pathname.slice("/ws/".length);
       if (!rest.startsWith("scenes/")) {
@@ -271,7 +280,6 @@ async function handleRequest(
       return;
     }
 
-    // three package: /vendor/three/...
     if (pathname === "/vendor/three" || pathname.startsWith("/vendor/three/")) {
       const rest =
         pathname === "/vendor/three"
@@ -286,7 +294,6 @@ async function handleRequest(
       return;
     }
 
-    // Viewer SPA assets
     if (pathname === "/" || pathname === "/index.html") {
       const indexPath = join(roots.viewerRoot, "index.html");
       const html = injectImportMap(await readFile(indexPath, "utf8"));
@@ -334,7 +341,6 @@ async function handleRequest(
 
 export const DEFAULT_SHOW_PORT = 3471;
 
-/** Ensure viewer build exists (for clearer errors in tests). */
 export async function assertViewerBuilt(): Promise<void> {
   const indexPath = join(viewerDistDir(), "index.html");
   try {

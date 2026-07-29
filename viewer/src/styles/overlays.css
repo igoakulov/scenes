@@ -3,7 +3,9 @@
 .summary-md {
   min-width: 0;
   max-width: 100%;
+  /* Set both axes: overflow-x alone makes overflow-y compute to auto (CSS pair rule). */
   overflow-x: hidden;
+  overflow-y: hidden;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -58,14 +60,24 @@
   font-weight: 600;
 }
 
-.summary-md ul,
-.summary-md ol {
+/* Tailwind preflight sets list-style:none on all ul/ol — without markers,
+   padding-left alone looks like a mysterious indent. Restore lists in Summary. */
+.summary-md ul {
+  list-style-type: disc;
   padding-left: 1.25em;
+}
+.summary-md ol {
+  list-style-type: decimal;
+  padding-left: 1.25em;
+}
+.summary-md li {
+  display: list-item;
 }
 
 .summary-md pre {
   max-width: 100%;
   overflow-x: hidden;
+  overflow-y: hidden;
   white-space: pre-wrap;
   font-size: inherit;
   padding: 0.4em 0.5em;
@@ -115,21 +127,27 @@
 
 .summary-md a {
   color: inherit;
-  text-decoration: underline;
+  text-decoration: none;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
+.summary-md a:hover {
+  color: var(--foreground);
+}
 
-/* KaTeX can be wide; allow wrap / clip to sheet width */
+/* KaTeX can be wide; clip horizontal only. Must set both axes: one-axis
+   overflow-x:hidden makes overflow-y compute to auto → vertical scrollbar on each block. */
 .summary-md .katex-display {
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   margin: 0.5em 0;
 }
 
 .summary-md .katex {
   max-width: 100%;
   white-space: normal;
+  overflow-y: hidden;
 }
 
 /* WebGL overlay labels (CSS2D) — not shadcn chrome */

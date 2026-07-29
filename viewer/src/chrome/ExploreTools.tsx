@@ -5,13 +5,10 @@ import { NumberField } from "./NumberField";
 
 interface Props {
   grid: GridState;
-  /** Scene camera stack — filters which grid planes appear in the menu. */
+  /** Scene dimensions — filters which grid planes appear in the menu. */
   dimensions: 2 | 3;
-  /** Host helpers on — show Grid / Size / Step row. */
   showHelpers: boolean;
-  /** Host camera nav on — show Reset camera [R]. */
   showCameraReset: boolean;
-  /** Host transport eligible — show Play/Pause. */
   showPlayback: boolean;
   playing: boolean;
   /** Space toggles transport only when host camera is on. */

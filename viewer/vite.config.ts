@@ -8,7 +8,6 @@ import { resolve } from "node:path";
  * Keep: Main, Math, AMS, Size*, Caligraphic, Script.
  */
 function katexFontsTrim(): Plugin {
-  // Dropped families (A2): Fraktur | SansSerif | Typewriter
   const dropFamily =
     /KaTeX_(?:Fraktur|SansSerif|Typewriter)[^/]*\.(?:ttf|woff2?|woff)$/;
   return {

@@ -2,6 +2,20 @@
 
 Agent skill + local tools for interactive 2D/3D educational scenes and model showcases — plain Three.js content, with a CLI and browser viewer that own camera, chrome, and controls.
 
+## Examples
+
+### Linear algebra intro
+
+![Example: Linear algebra intro](examples/screenshots/example-linear-algebra.png)
+
+### Pendulum homework
+
+*Screenshot pending.*
+
+### Solar system
+
+*Screenshot pending.*
+
 ## Who it’s for
 
 **Teachers and students** — explore STEM subjects and concepts with interactive scenes instead of static slides.
@@ -10,11 +24,30 @@ Agent skill + local tools for interactive 2D/3D educational scenes and model sho
 
 ## Install
 
-Ask your agent (Claude Code/Cowork, ChatGPT Codex, and similar) to install and use the Scenes skill. He does the rest.
+**With your agent (recommended)** — ask Claude Code/Cowork, ChatGPT Codex, or a similar agent to install and use the Scenes skill. It sets up the CLI and skill for you.
+
+**npm package** (Node ≥ 20):
+
+```bash
+npm install -g scenes
+scenes init
+```
+
+**From this repo**:
+
+```bash
+git clone https://github.com/igoakulov/scenes.git
+cd scenes
+npm install          # builds CLI + viewer (prepare)
+npm link             # optional: put `scenes` on your PATH
+scenes init          # or without link: node bin/scenes.js init
+```
+
+IMPORTANT: must still install / point your agent at `scenes-skill`.
 
 ## How to use
 
-1. Describe: explore the subject/concept with your agent and ask to create a scene with Scenes skill.
+1. Describe: explore the subject/concept with your agent and ask to create a scene with `scenes-skill`.
 2. Explore: view the scene and its summary from your conversation with agent.
 3. Play: use live cards that change the scene, play animation, see how everything interacts!
 
@@ -24,6 +57,7 @@ Ask your agent (Claude Code/Cowork, ChatGPT Codex, and similar) to install and u
 - Built for class and self-study — clear summaries (including math), labels in the scene, and controls that match what you’re studying
 - Hands-on, alive — drag the view, play animation, and change numbers and options to watch objects respond
 - Keep a personal library — save many scenes, reopen later, copy or back up the ones you care about
+- Example scenes included — try them out, ask agent to tweak them
 - Your agent does all the work — you describe the concept; the agent builds and updates the scene
 - Works with the agent you already use — Claude Code/Cowork, ChatGPT Work/Codex, and similar
 

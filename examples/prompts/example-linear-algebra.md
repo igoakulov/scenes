@@ -1,0 +1,1 @@
+With the Scenes skill, make a simple 3d scene for my students in class on linear algebra intro. Cover vector addition and scalar stretch, basis directions... Keep it clear enough to open while we talk. Add supporting theory in description.

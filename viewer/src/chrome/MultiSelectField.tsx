@@ -29,7 +29,6 @@ export function MultiSelectField({
   options: MultiSelectOption[];
   value: string[];
   onChange: (next: string[]) => void;
-  /** Summary when every option is selected and there are 2+. */
   allSummary?: string;
   noneSummary?: string;
   className?: string;

@@ -1,4 +1,3 @@
-/** Param field controls + non-card leaves for Explore ParamsPanel. */
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { ParamValue } from "../../runtime/defaults";
 import {
@@ -41,7 +40,6 @@ export function cardValue(node: Extract<ParamsNode, { type: "card" }>, i: number
   return node.id ?? `card-${i}-${node.title}`;
 }
 
-/** Non-card leaves + controls (no card chrome). */
 export function renderLeaf(
   node: Exclude<ParamsNode, { type: "card" }>,
   params: Record<string, ParamValue>,

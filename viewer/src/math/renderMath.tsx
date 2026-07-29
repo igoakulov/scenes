@@ -46,7 +46,6 @@ export function MathText({
 }: {
   text: string;
   className?: string;
-  /** Use `span` inside FieldLabel / inline chrome. */
   as?: "div" | "span";
 }): ReactNode {
   return (
@@ -61,7 +60,6 @@ export function MathText({
   );
 }
 
-/** For DOM chips outside React. */
 export function fillMathElement(el: HTMLElement, text: string): void {
   el.innerHTML = renderMathToHtml(text);
 }

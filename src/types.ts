@@ -90,7 +90,6 @@ export type WritableParamField =
   | MultiselectParamField
   | StringParamField;
 
-/** Flat bag values: scalars + multiselect string[]. */
 export type ParamValue = number | boolean | string | string[];
 
 export interface NoteParamNode {
@@ -119,7 +118,6 @@ export interface ParamCard {
   children: ParamsNode[];
 }
 
-/** Ordered node in `params()` tree (root array or card.children). */
 export type ParamsNode =
   | ParamCard
   | WritableParamField
