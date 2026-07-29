@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDownIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MathText } from "../math/renderMath";
 
 export type MultiSelectOption = { value: string; label: string };
 
@@ -55,7 +56,9 @@ export function MultiSelectField({
 
   return (
     <Field className={cn("min-w-0 gap-1", className)}>
-      <FieldLabel className="text-xs text-muted-foreground">{label}</FieldLabel>
+      <FieldLabel className="text-xs text-muted-foreground">
+        <MathText as="span" text={label} />
+      </FieldLabel>
       <DropdownMenu>
         <DropdownMenuTrigger
           render={

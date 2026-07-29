@@ -17,6 +17,8 @@ npm install -g scenes
 scenes init [path]             # once; omit path → cwd
 ```
 
+Create launcher file for user on Desktop or workspace: `/abs/path/scenes show`
+
 ## Workspace
 
 - CONFIG: `~/.config/scenes/config.json` — `workspace`, optional `port`
@@ -56,7 +58,7 @@ Unless user states otherwise:
 ```
 
 - title, description, tags: required
-- description: long prose; simple markdown + KaTeX $…$ / $$…$$ ok
+- description: about scene or topic based on conversation with user; simple markdown + KaTeX $…$ / $$…$$ ok
 - dimensions: optional 2 | 3 (default 3) → 3 perspective+orbit, 2 ortho face-on pan/zoom
 - attribution: optional object
 
@@ -241,4 +243,4 @@ cp -R scenes/my-scene scenes/my-scene-backup   # or host file tools
 cp -R scenes/my-scene scenes/.my-scene         # leading . hides from list UI; CLI still targets
 ```
 
-For more use git.
+For more: use git.

@@ -14,11 +14,102 @@ import type {
   WritableParamField,
 } from "../types.js";
 import { PARAM_NODE_TYPES } from "../types.js";
+export { resolveLabelValue } from "../label-value.js";
 
 const ALLOWED_TYPES_MSG = `want ${PARAM_NODE_TYPES.join("|")}`;
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
+}
+
+function push(
+  issues: ValidationIssue[],
+  path: string,
+  message: string,
+): void {
+  issues.push({ path, message });
+}
+
+function wantNonEmptyString(
+  raw: unknown,
+  fieldPath: string,
+  issues: ValidationIssue[],
+): raw is string {
+  if (typeof raw !== "string" || raw.trim() === "") {
+    push(issues, fieldPath, "want non-empty string");
+    return false;
+  }
+  return true;
+}
+
+function wantFiniteNumber(
+  raw: unknown,
+  fieldPath: string,
+  issues: ValidationIssue[],
+): raw is number {
+  if (typeof raw !== "number" || !Number.isFinite(raw)) {
+    push(issues, fieldPath, "want finite number");
+    return false;
+  }
+  return true;
+}
+
+function wantString(
+  raw: unknown,
+  fieldPath: string,
+  issues: ValidationIssue[],
+): raw is string {
+  if (typeof raw !== "string") {
+    push(issues, fieldPath, "want string");
+    return false;
+  }
+  return true;
+}
+
+function wantBoolean(
+  raw: unknown,
+  fieldPath: string,
+  issues: ValidationIssue[],
+): raw is boolean {
+  if (typeof raw !== "boolean") {
+    push(issues, fieldPath, "want boolean");
+    return false;
+  }
+  return true;
+}
+
+function wantStringOptions(
+  raw: unknown,
+  path: string,
+  issues: ValidationIssue[],
+): raw is string[] {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    push(issues, `${path}.options`, "want non-empty string[]");
+    return false;
+  }
+  let ok = true;
+  raw.forEach((opt, j) => {
+    if (typeof opt !== "string") {
+      push(issues, `${path}.options[${j}]`, "want string");
+      ok = false;
+    }
+  });
+  return ok;
+}
+
+function rejectReadOnlyKey(
+  raw: Record<string, unknown>,
+  path: string,
+  issues: ValidationIssue[],
+  kind: "note" | "label",
+): void {
+  if (raw.key !== undefined) {
+    push(
+      issues,
+      `${path}.key`,
+      `${kind} is read-only; omit key (not in host.params)`,
+    );
+  }
 }
 
 export interface ValidateParamsTreeResult {
@@ -43,7 +134,7 @@ export function validateParamsTree(
   const writable: WritableParamField[] = [];
 
   if (!Array.isArray(raw)) {
-    issues.push({ path: basePath, message: "want array" });
+    push(issues, basePath, "want array");
     return { issues };
   }
 
@@ -66,20 +157,21 @@ function validateNode(
   writable: WritableParamField[],
 ): ParamsNode | undefined {
   if (!isPlainObject(raw)) {
-    issues.push({ path, message: "want object" });
+    push(issues, path, "want object");
     return undefined;
   }
 
   if ("fields" in raw && raw.fields !== undefined) {
-    issues.push({
-      path: `${path}.fields`,
-      message: "unsupported; use single ordered children list (not fields + children)",
-    });
+    push(
+      issues,
+      `${path}.fields`,
+      "unsupported; use single ordered children list (not fields + children)",
+    );
   }
 
   const type = raw.type;
   if (typeof type !== "string") {
-    issues.push({ path: `${path}.type`, message: "want string" });
+    push(issues, `${path}.type`, "want string");
     return undefined;
   }
 
@@ -101,10 +193,7 @@ function validateNode(
     case "string":
       return validateString(raw, path, issues, seenKeys, writable);
     default:
-      issues.push({
-        path: `${path}.type`,
-        message: ALLOWED_TYPES_MSG,
-      });
+      push(issues, `${path}.type`, ALLOWED_TYPES_MSG);
       return undefined;
   }
 }
@@ -119,22 +208,20 @@ function validateCard(
 ): ParamCard | undefined {
   const before = issues.length;
 
-  if (typeof raw.title !== "string" || raw.title.trim() === "") {
-    issues.push({ path: `${path}.title`, message: "want non-empty string" });
-  }
+  wantNonEmptyString(raw.title, `${path}.title`, issues);
 
   if (raw.id !== undefined) {
-    if (typeof raw.id !== "string" || raw.id.trim() === "") {
-      issues.push({ path: `${path}.id`, message: "want non-empty string" });
+    if (!wantNonEmptyString(raw.id, `${path}.id`, issues)) {
+      /* already recorded */
     } else if (seenCardIds.has(raw.id)) {
-      issues.push({ path: `${path}.id`, message: `duplicate "${raw.id}"` });
+      push(issues, `${path}.id`, `duplicate "${raw.id}"`);
     } else {
       seenCardIds.add(raw.id);
     }
   }
 
   if (!Array.isArray(raw.children)) {
-    issues.push({ path: `${path}.children`, message: "want array" });
+    push(issues, `${path}.children`, "want array");
   }
 
   const children: ParamsNode[] = [];
@@ -171,16 +258,8 @@ function validateNote(
   path: string,
   issues: ValidationIssue[],
 ): NoteParamNode | undefined {
-  if (typeof raw.text !== "string" || raw.text.trim() === "") {
-    issues.push({ path: `${path}.text`, message: "want non-empty string" });
-    return undefined;
-  }
-  if (raw.key !== undefined) {
-    issues.push({
-      path: `${path}.key`,
-      message: "note is read-only; omit key (not in host.params)",
-    });
-  }
+  if (!wantNonEmptyString(raw.text, `${path}.text`, issues)) return undefined;
+  rejectReadOnlyKey(raw, path, issues, "note");
   return { type: "note", text: raw.text };
 }
 
@@ -190,44 +269,17 @@ function validateLabel(
   issues: ValidationIssue[],
 ): LabelParamNode | undefined {
   const before = issues.length;
-  if (typeof raw.label !== "string" || raw.label.trim() === "") {
-    issues.push({ path: `${path}.label`, message: "want non-empty string" });
-  }
-  // Static string or pure (params) => string for derived display (area, angles, …).
+  wantNonEmptyString(raw.label, `${path}.label`, issues);
   if (typeof raw.value !== "string" && typeof raw.value !== "function") {
-    issues.push({
-      path: `${path}.value`,
-      message: "want string or (params) => string",
-    });
+    push(issues, `${path}.value`, "want string or (params) => string");
   }
-  if (raw.key !== undefined) {
-    issues.push({
-      path: `${path}.key`,
-      message: "label is read-only; omit key (not in host.params)",
-    });
-  }
+  rejectReadOnlyKey(raw, path, issues, "label");
   if (issues.length > before) return undefined;
   return {
     type: "label",
     label: raw.label as string,
     value: raw.value as LabelParamNode["value"],
   };
-}
-
-/** Resolve a label for display (string as-is; function called with flat params). */
-export function resolveLabelValue(
-  value: LabelParamNode["value"],
-  params: Record<string, ParamValue>,
-): string {
-  if (typeof value === "function") {
-    try {
-      const out = value(params);
-      return typeof out === "string" ? out : String(out);
-    } catch (err) {
-      return `(error: ${err instanceof Error ? err.message : String(err)})`;
-    }
-  }
-  return value;
 }
 
 function registerKey(
@@ -237,11 +289,11 @@ function registerKey(
   seenKeys: Set<string>,
 ): key is string {
   if (typeof key !== "string" || key.trim() === "") {
-    issues.push({ path: `${path}.key`, message: "want non-empty string" });
+    push(issues, `${path}.key`, "want non-empty string");
     return false;
   }
   if (seenKeys.has(key)) {
-    issues.push({ path: `${path}.key`, message: `duplicate "${key}"` });
+    push(issues, `${path}.key`, `duplicate "${key}"`);
     return false;
   }
   seenKeys.add(key);
@@ -258,24 +310,16 @@ function validateNumber(
   const before = issues.length;
   const keyOk = registerKey(raw.key, path, issues, seenKeys);
 
-  if (typeof raw.label !== "string" || raw.label.trim() === "") {
-    issues.push({ path: `${path}.label`, message: "want non-empty string" });
-  }
-  if (typeof raw.min !== "number" || !Number.isFinite(raw.min)) {
-    issues.push({ path: `${path}.min`, message: "want finite number" });
-  }
-  if (typeof raw.max !== "number" || !Number.isFinite(raw.max)) {
-    issues.push({ path: `${path}.max`, message: "want finite number" });
-  }
-  if (typeof raw.default !== "number" || !Number.isFinite(raw.default)) {
-    issues.push({ path: `${path}.default`, message: "want finite number" });
-  }
+  wantNonEmptyString(raw.label, `${path}.label`, issues);
+  wantFiniteNumber(raw.min, `${path}.min`, issues);
+  wantFiniteNumber(raw.max, `${path}.max`, issues);
+  wantFiniteNumber(raw.default, `${path}.default`, issues);
   if (
     typeof raw.min === "number" &&
     typeof raw.max === "number" &&
     raw.min > raw.max
   ) {
-    issues.push({ path: `${path}.min`, message: "must be <= max" });
+    push(issues, `${path}.min`, "must be <= max");
   }
   if (
     raw.step !== undefined &&
@@ -283,10 +327,10 @@ function validateNumber(
       !Number.isFinite(raw.step) ||
       raw.step <= 0)
   ) {
-    issues.push({ path: `${path}.step`, message: "want positive number" });
+    push(issues, `${path}.step`, "want positive number");
   }
   if (raw.unit !== undefined && typeof raw.unit !== "string") {
-    issues.push({ path: `${path}.unit`, message: "want string" });
+    push(issues, `${path}.unit`, "want string");
   }
 
   if (issues.length > before || !keyOk) return undefined;
@@ -315,12 +359,8 @@ function validateBoolean(
   const before = issues.length;
   const keyOk = registerKey(raw.key, path, issues, seenKeys);
 
-  if (typeof raw.label !== "string" || raw.label.trim() === "") {
-    issues.push({ path: `${path}.label`, message: "want non-empty string" });
-  }
-  if (typeof raw.default !== "boolean") {
-    issues.push({ path: `${path}.default`, message: "want boolean" });
-  }
+  wantNonEmptyString(raw.label, `${path}.label`, issues);
+  wantBoolean(raw.default, `${path}.default`, issues);
 
   if (issues.length > before || !keyOk) return undefined;
 
@@ -344,26 +384,16 @@ function validateSelect(
   const before = issues.length;
   const keyOk = registerKey(raw.key, path, issues, seenKeys);
 
-  if (typeof raw.label !== "string" || raw.label.trim() === "") {
-    issues.push({ path: `${path}.label`, message: "want non-empty string" });
-  }
-  if (!Array.isArray(raw.options) || raw.options.length === 0) {
-    issues.push({ path: `${path}.options`, message: "want non-empty string[]" });
-  } else {
-    raw.options.forEach((opt, j) => {
-      if (typeof opt !== "string") {
-        issues.push({ path: `${path}.options[${j}]`, message: "want string" });
-      }
-    });
-  }
-  if (typeof raw.default !== "string") {
-    issues.push({ path: `${path}.default`, message: "want string" });
+  wantNonEmptyString(raw.label, `${path}.label`, issues);
+  wantStringOptions(raw.options, path, issues);
+  if (!wantString(raw.default, `${path}.default`, issues)) {
+    /* recorded */
   } else if (
     Array.isArray(raw.options) &&
     raw.options.every((o) => typeof o === "string") &&
     !raw.options.includes(raw.default)
   ) {
-    issues.push({ path: `${path}.default`, message: "must be in options" });
+    push(issues, `${path}.default`, "must be in options");
   }
 
   if (issues.length > before || !keyOk) return undefined;
@@ -389,20 +419,10 @@ function validateMultiselect(
   const before = issues.length;
   const keyOk = registerKey(raw.key, path, issues, seenKeys);
 
-  if (typeof raw.label !== "string" || raw.label.trim() === "") {
-    issues.push({ path: `${path}.label`, message: "want non-empty string" });
-  }
-  if (!Array.isArray(raw.options) || raw.options.length === 0) {
-    issues.push({ path: `${path}.options`, message: "want non-empty string[]" });
-  } else {
-    raw.options.forEach((opt, j) => {
-      if (typeof opt !== "string") {
-        issues.push({ path: `${path}.options[${j}]`, message: "want string" });
-      }
-    });
-  }
+  wantNonEmptyString(raw.label, `${path}.label`, issues);
+  wantStringOptions(raw.options, path, issues);
   if (!Array.isArray(raw.default)) {
-    issues.push({ path: `${path}.default`, message: "want string[]" });
+    push(issues, `${path}.default`, "want string[]");
   } else {
     const opts =
       Array.isArray(raw.options) && raw.options.every((o) => typeof o === "string")
@@ -410,12 +430,9 @@ function validateMultiselect(
         : null;
     raw.default.forEach((d, j) => {
       if (typeof d !== "string") {
-        issues.push({ path: `${path}.default[${j}]`, message: "want string" });
+        push(issues, `${path}.default[${j}]`, "want string");
       } else if (opts && !opts.includes(d)) {
-        issues.push({
-          path: `${path}.default[${j}]`,
-          message: "must be in options",
-        });
+        push(issues, `${path}.default[${j}]`, "must be in options");
       }
     });
   }
@@ -443,17 +460,10 @@ function validateString(
   const before = issues.length;
   const keyOk = registerKey(raw.key, path, issues, seenKeys);
 
-  if (typeof raw.label !== "string" || raw.label.trim() === "") {
-    issues.push({ path: `${path}.label`, message: "want non-empty string" });
-  }
-  if (typeof raw.default !== "string") {
-    issues.push({ path: `${path}.default`, message: "want string" });
-  }
-  if (
-    raw.placeholder !== undefined &&
-    typeof raw.placeholder !== "string"
-  ) {
-    issues.push({ path: `${path}.placeholder`, message: "want string" });
+  wantNonEmptyString(raw.label, `${path}.label`, issues);
+  wantString(raw.default, `${path}.default`, issues);
+  if (raw.placeholder !== undefined && typeof raw.placeholder !== "string") {
+    push(issues, `${path}.placeholder`, "want string");
   }
 
   if (issues.length > before || !keyOk) return undefined;
@@ -484,9 +494,6 @@ export function defaultsFromWritable(
   return defaults;
 }
 
-/** @deprecated Use defaultsFromWritable */
-export const defaultsFromFields = defaultsFromWritable;
-
 export function validateParamsResult(
   result: unknown,
   basePath: string,
@@ -511,7 +518,6 @@ export function validateParamsResult(
     if (item.cardId !== undefined && typeof item.cardId !== "string") {
       shapeIssues.push({ path: `${p}.cardId`, message: "want string" });
     }
-    // Legacy groupId: reject so agents migrate
     if (item.groupId !== undefined) {
       shapeIssues.push({
         path: `${p}.groupId`,

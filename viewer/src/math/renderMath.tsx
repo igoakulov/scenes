@@ -42,13 +42,20 @@ export function renderMathToHtml(text: string): string {
 export function MathText({
   text,
   className,
+  as: Tag = "div",
 }: {
   text: string;
   className?: string;
+  /** Use `span` inside FieldLabel / inline chrome. */
+  as?: "div" | "span";
 }): ReactNode {
   return (
-    <div
-      className={cn("min-w-0 break-words [overflow-wrap:anywhere]", className)}
+    <Tag
+      className={cn(
+        "min-w-0 break-words [overflow-wrap:anywhere] [&_.katex]:text-inherit",
+        Tag === "span" && "inline",
+        className,
+      )}
       dangerouslySetInnerHTML={{ __html: renderMathToHtml(text) }}
     />
   );

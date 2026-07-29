@@ -28,12 +28,12 @@ export function SummaryPanel({
     }
   }, [copyText]);
 
-  const attributionText = metadata.attribution
-    ? Object.entries(metadata.attribution)
-        .filter(([, v]) => typeof v === "string" && v)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(" · ")
-    : "";
+  const attributionRows = metadata.attribution
+    ? Object.entries(metadata.attribution).filter(
+        (entry): entry is [string, string] =>
+          typeof entry[1] === "string" && Boolean(entry[1]),
+      )
+    : [];
 
   return (
     <div className="flex min-w-0 flex-col gap-2.5 text-xs/relaxed">
@@ -77,17 +77,21 @@ export function SummaryPanel({
           ))}
         </div>
       )}
-      {attributionText && (
+      {attributionRows.length > 0 && (
         <section className="flex min-w-0 flex-col gap-1">
-          <p className="text-xs font-normal text-muted-foreground">
+          <p className="m-0 text-xs font-normal text-muted-foreground">
             Attribution
           </p>
-          <p
-            className="m-0 min-w-0 truncate text-xs/relaxed text-muted-foreground"
-            title={attributionText}
-          >
-            {attributionText}
-          </p>
+          <ul className="m-0 flex list-disc flex-col gap-0.5 pl-4">
+            {attributionRows.map(([key, value]) => (
+              <li
+                key={key}
+                className="sheet-selectable m-0 min-w-0 break-words text-xs/relaxed text-muted-foreground [overflow-wrap:anywhere]"
+              >
+                {key}: {value}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
     </div>

@@ -72,7 +72,10 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
   let body: ReactNode;
   if (error) {
     body = (
-      <p className="m-0 px-2 text-xs text-muted-foreground" title={error}>
+      <p
+        className="sheet-selectable m-0 px-2 text-xs text-muted-foreground"
+        title={error}
+      >
         {error}
       </p>
     );
@@ -82,7 +85,7 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
     );
   } else if (entries.length === 0) {
     body = (
-      <p className="m-0 px-2 text-xs/relaxed text-muted-foreground">
+      <p className="sheet-selectable m-0 px-2 text-xs/relaxed text-muted-foreground">
         Ask your AI agent to create your first scene with{" "}
         <a
           href={SCENES_SKILL_URL}

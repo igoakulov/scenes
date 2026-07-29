@@ -90,9 +90,6 @@ export type WritableParamField =
   | MultiselectParamField
   | StringParamField;
 
-/** @deprecated Use WritableParamField — kept as alias during transition. */
-export type ParamField = WritableParamField;
-
 /** Flat bag values: scalars + multiselect string[]. */
 export type ParamValue = number | boolean | string | string[];
 

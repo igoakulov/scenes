@@ -5,8 +5,7 @@ import { ExploreTools } from "./chrome/ExploreTools";
 import { LibraryPanel } from "./chrome/LibraryPanel";
 import { ParamsPanel } from "./chrome/params";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+// Shell: B5 hand-rolled tabs (theme tokens); B1 .sheet-scroll (not Base UI ScrollArea/Tabs)
 import { loadScene, type LoadedScene } from "./runtime/loadScene";
 import type { ParamValue } from "./runtime/defaults";
 import {
@@ -133,8 +132,12 @@ export function App() {
     }
 
     let cancelled = false;
+    // Drop previous scene UI immediately so Summary/Explore never flash old content.
     setLoading(true);
     setError(null);
+    setLoaded(null);
+    setLiveParams({});
+    rt.showEmpty();
 
     void (async () => {
       try {
@@ -305,7 +308,6 @@ export function App() {
       <div className="panel-toggle-float">{panelBtn}</div>
 
       <div className="viewport">
-        <div className="wordmark">Scenes</div>
         <div className="viewport-canvas-host" ref={canvasHostRef} />
         {error && <div className="viewport-error">{error}</div>}
       </div>
@@ -316,68 +318,110 @@ export function App() {
       >
         <div className="sheet-inner">
           <header className="sheet-header">
-            <Tabs
-              value={sheetTab}
-              onValueChange={onSheetTabChange}
-              className="min-w-0"
+            <div
+              role="tablist"
+              aria-label="Sheet"
+              className="inline-flex h-8 min-w-0 items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground"
             >
-              <TabsList>
-                <TabsTrigger value="library">Library</TabsTrigger>
-                <TabsTrigger value="summary" disabled={!hasScene}>
-                  Summary
-                </TabsTrigger>
-                <TabsTrigger value="explore" disabled={!hasScene}>
-                  Explore
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+              {(
+                [
+                  { id: "library" as const, label: "Library", disabled: false },
+                  {
+                    id: "summary" as const,
+                    label: "Summary",
+                    disabled: !hasScene,
+                  },
+                  {
+                    id: "explore" as const,
+                    label: "Explore",
+                    disabled: !hasScene,
+                  },
+                ] as const
+              ).map((tab) => {
+                const active = sheetTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    disabled={tab.disabled}
+                    className={cn(
+                      "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center rounded-md border border-transparent px-1.5 py-0.5 text-xs font-medium whitespace-nowrap transition-colors outline-none",
+                      "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                      "disabled:pointer-events-none disabled:opacity-50",
+                      active
+                        ? "bg-background text-foreground dark:border-input dark:bg-input/30"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    onClick={() => onSheetTabChange(tab.id)}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
           </header>
           <div className="sheet-body">
-            <ScrollArea className="h-full">
+            <div className="sheet-scroll">
               <div className="min-w-0 px-3 py-3">
                 {sheetTab === "library" && (
                   <LibraryPanel onOpen={openScene} />
                 )}
-                {sheetTab === "summary" && hasScene && loaded && (
-                  <SummaryPanel id={loaded.id} metadata={loaded.metadata} />
-                )}
-                {sheetTab === "summary" && hasScene && !loaded && loading && (
-                  <p className="text-xs text-muted-foreground">Loading…</p>
-                )}
+                {sheetTab === "summary" &&
+                  hasScene &&
+                  loaded &&
+                  loaded.id === sceneId && (
+                    <SummaryPanel id={loaded.id} metadata={loaded.metadata} />
+                  )}
+                {sheetTab === "summary" &&
+                  hasScene &&
+                  (!loaded || loaded.id !== sceneId) &&
+                  loading && (
+                    <p className="text-xs text-muted-foreground">Loading…</p>
+                  )}
                 {sheetTab === "summary" &&
                   hasScene &&
                   !loaded &&
                   !loading &&
                   error && (
-                    <p className="text-xs text-muted-foreground break-words">
+                    <p className="sheet-selectable text-xs text-muted-foreground break-words">
                       {error}
                     </p>
                   )}
                 {sheetTab === "explore" && hasScene && (
                   <div className="flex min-w-0 flex-col gap-3">
-                    <ExploreTools
-                      grid={grid}
-                      dimensions={loaded?.metadata.dimensions ?? 3}
-                      showHelpers={loaded?.runtime.helpers ?? true}
-                      showCameraReset={loaded?.runtime.camera ?? true}
-                      showPlayback={playback.show}
-                      playing={playback.playing}
-                      spaceTogglesPlayback={loaded?.runtime.camera ?? true}
-                      onGridChange={onGridChange}
-                      onResetView={() => runtimeRef.current?.resetView()}
-                      onTogglePlay={() => runtimeRef.current?.togglePlaying()}
-                    />
-                    {loaded && loaded.paramsTree.length > 0 && (
-                      <ParamsPanel
-                        tree={loaded.paramsTree}
-                        params={liveParams}
-                        onChange={onParamChange}
-                      />
-                    )}
+                    {loaded && loaded.id === sceneId ? (
+                      <>
+                        <ExploreTools
+                          grid={grid}
+                          dimensions={loaded.metadata.dimensions}
+                          showHelpers={loaded.runtime.helpers}
+                          showCameraReset={loaded.runtime.camera}
+                          showPlayback={playback.show}
+                          playing={playback.playing}
+                          spaceTogglesPlayback={loaded.runtime.camera}
+                          onGridChange={onGridChange}
+                          onResetView={() => runtimeRef.current?.resetView()}
+                          onTogglePlay={() =>
+                            runtimeRef.current?.togglePlaying()
+                          }
+                        />
+                        {loaded.paramsTree.length > 0 && (
+                          <ParamsPanel
+                            tree={loaded.paramsTree}
+                            params={liveParams}
+                            onChange={onParamChange}
+                          />
+                        )}
+                      </>
+                    ) : loading ? (
+                      <p className="text-xs text-muted-foreground">Loading…</p>
+                    ) : null}
                   </div>
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </div>
         </div>
       </aside>

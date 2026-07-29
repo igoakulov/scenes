@@ -11,6 +11,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group";
+import { MathText } from "../math/renderMath";
 
 export function NumberField({
   id: idProp,
@@ -113,7 +114,7 @@ export function NumberField({
   return (
     <Field className="min-w-0 gap-1">
       <FieldLabel htmlFor={id} className="text-xs text-muted-foreground">
-        {label}
+        <MathText as="span" text={label} />
       </FieldLabel>
       {input}
     </Field>

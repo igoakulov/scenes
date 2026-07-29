@@ -1,7 +1,9 @@
 /**
  * Explore params: accordion sections for `type: "card"` (multiple open).
  */
+import type { ReactNode } from "react";
 import type { ParamsNode } from "../../runtime/paramsTree";
+import { MathText } from "../../math/renderMath";
 import {
   Accordion,
   AccordionContent,
@@ -38,7 +40,7 @@ function NodeList({
   params: ParamsPanelProps["params"];
   onChange: OnParamChange;
 }) {
-  const out: React.ReactNode[] = [];
+  const out: ReactNode[] = [];
   let i = 0;
   while (i < nodes.length) {
     const node = nodes[i]!;
@@ -71,7 +73,9 @@ function NodeList({
           const value = values[j]!;
           return (
             <AccordionItem key={value} value={value}>
-              <AccordionTrigger>{card.title}</AccordionTrigger>
+              <AccordionTrigger>
+                <MathText as="span" text={card.title} />
+              </AccordionTrigger>
               <AccordionContent>
                 <div className="flex min-w-0 flex-col gap-3">
                   <NodeList

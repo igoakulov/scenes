@@ -1,5 +1,6 @@
-/** Flat bag values (mirrors CLI ParamValue). */
-export type ParamValue = number | boolean | string | string[];
+/** Flat bag values — shared with CLI types. */
+export type { ParamValue } from "../../../src/types";
+import type { ParamValue } from "../../../src/types";
 
 /** Flat defaults from a params() tree (known writable fields only; skip unknowns). */
 export function defaultsFromParamsTree(

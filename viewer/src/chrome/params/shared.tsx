@@ -52,7 +52,7 @@ export function renderLeaf(
       return (
         <MathText
           text={node.text}
-          className="min-w-0 break-words rounded-md border border-dashed border-muted-foreground/40 px-2 py-1.5 text-xs/relaxed text-muted-foreground [&_.katex]:text-foreground"
+          className="sheet-selectable min-w-0 break-words rounded-md border border-dashed border-muted-foreground/40 px-2 py-1.5 text-xs/relaxed text-muted-foreground [&_.katex]:text-foreground"
         />
       );
     case "label":
@@ -60,12 +60,16 @@ export function renderLeaf(
       // Value wraps (full text); not truncate — computed labels can be long.
       return (
         <div className="flex min-w-0 items-start justify-between gap-2 px-2 text-xs/relaxed">
-          <span className="max-w-[40%] shrink-0 break-words text-muted-foreground">
-            {node.label}
-          </span>
-          <span className="min-w-0 flex-1 break-words text-right font-mono text-foreground [overflow-wrap:anywhere]">
-            {resolveLabelValue(node.value, params)}
-          </span>
+          <MathText
+            as="span"
+            text={node.label}
+            className="max-w-[40%] shrink-0 break-words text-muted-foreground"
+          />
+          <MathText
+            as="span"
+            text={resolveLabelValue(node.value, params)}
+            className="sheet-selectable min-w-0 flex-1 break-words text-right font-mono text-foreground [overflow-wrap:anywhere]"
+          />
         </div>
       );
     case "number": {
@@ -90,7 +94,7 @@ export function renderLeaf(
       return (
         <Field orientation="horizontal" className="items-center">
           <FieldLabel htmlFor={`p-${node.key}`} className="flex-1 text-xs">
-            {node.label}
+            <MathText as="span" text={node.label} />
           </FieldLabel>
           <Switch
             id={`p-${node.key}`}
@@ -104,7 +108,7 @@ export function renderLeaf(
       return (
         <Field className="gap-1">
           <FieldLabel className="text-xs text-muted-foreground">
-            {node.label}
+            <MathText as="span" text={node.label} />
           </FieldLabel>
           <Select
             value={String(params[node.key] ?? node.default)}
@@ -170,7 +174,7 @@ function StringControl({
   return (
     <Field className="gap-1">
       <FieldLabel htmlFor={id} className="text-xs text-muted-foreground">
-        {node.label}
+        <MathText as="span" text={node.label} />
       </FieldLabel>
       <Input
         id={id}
@@ -196,4 +200,3 @@ function StringControl({
     </Field>
   );
 }
-

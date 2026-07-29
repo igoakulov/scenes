@@ -3,10 +3,16 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "node:path";
 
-/** Ship only woff2 for KaTeX (drop redundant ttf/woff). */
-function katexWoff2Only(): Plugin {
+/**
+ * KaTeX fonts: woff2 only; drop rarely used alphabets (Fraktur, SansSerif, Typewriter).
+ * Keep: Main, Math, AMS, Size*, Caligraphic, Script.
+ */
+function katexFontsTrim(): Plugin {
+  // Dropped families (A2): Fraktur | SansSerif | Typewriter
+  const dropFamily =
+    /KaTeX_(?:Fraktur|SansSerif|Typewriter)[^/]*\.(?:ttf|woff2?|woff)$/;
   return {
-    name: "katex-woff2-only",
+    name: "katex-fonts-trim",
     transform(code, id) {
       if (!id.includes("katex") || !id.endsWith(".css")) return null;
       // Drop url(...) format("truetype"|"woff") entries; keep woff2.
@@ -14,14 +20,18 @@ function katexWoff2Only(): Plugin {
         /url\(([^)]+)\)\s*format\(["'](?:truetype|woff)["']\)\s*,?\s*/g,
         "",
       );
-      // Clean double commas / trailing commas before }
+      // Drop @font-face blocks for unused families (woff2 urls too).
+      next = next.replace(
+        /@font-face\s*\{[^}]*KaTeX_(?:Fraktur|SansSerif|Typewriter)[^}]*\}/g,
+        "",
+      );
       next = next.replace(/,\s*}/g, "}");
       next = next.replace(/,\s*,/g, ",");
       return next;
     },
     generateBundle(_opts, bundle) {
       for (const fileName of Object.keys(bundle)) {
-        if (/KaTeX_.*\.(ttf|woff)$/.test(fileName)) {
+        if (/KaTeX_.*\.(ttf|woff)$/.test(fileName) || dropFamily.test(fileName)) {
           delete bundle[fileName];
         }
       }
@@ -31,7 +41,7 @@ function katexWoff2Only(): Plugin {
 
 export default defineConfig({
   root: resolve(__dirname),
-  plugins: [react(), tailwindcss(), katexWoff2Only()],
+  plugins: [react(), tailwindcss(), katexFontsTrim()],
   resolve: {
     alias: {
       "@": resolve(__dirname, "src"),
@@ -60,4 +70,3 @@ export default defineConfig({
     },
   },
 });
-
