@@ -17,7 +17,7 @@ export async function cmdInit(
   } catch (err) {
     if (!force) {
       console.error(err instanceof Error ? err.message : String(err));
-      printHint("fix config or: scenes init --force");
+      printHint("fix config or: scenie init --force");
       return 1;
     }
     current = null;
@@ -44,7 +44,7 @@ export async function cmdInit(
       return 0;
     }
     console.error(`workspace set: ${current.workspace}`);
-    printHint(`scenes init ${pathArg ?? "."} --force`);
+    printHint(`scenie init ${pathArg ?? "."} --force`);
     return 1;
   }
 

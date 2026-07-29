@@ -1,7 +1,7 @@
 import katex from "katex";
 import { Marked } from "marked";
 
-const MATH_PH = (i: number) => `%%SCENES_MATH_${i}%%`;
+const MATH_PH = (i: number) => `%%SCENIE_MATH_${i}%%`;
 
 function escapeHtml(s: string): string {
   return s

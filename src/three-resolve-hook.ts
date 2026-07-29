@@ -1,6 +1,6 @@
 /**
  * Resolve bare `three` imports from workspace scenes to this npm package's dependency.
- * Registered from bin/scenes.js before the CLI loads scene modules.
+ * Registered from bin/scenie.js before the CLI loads scene modules.
  */
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";

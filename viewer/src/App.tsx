@@ -139,7 +139,7 @@ export function App() {
       setLiveParams({});
       setError(null);
       setLoading(false);
-      document.title = "Scenes";
+      document.title = "Scenie";
       const saved = gridByKey.get(NO_SCENE_KEY) ?? { ...DEFAULT_GRID };
       setGrid(saved);
       rt.setGridState(saved);
@@ -167,7 +167,7 @@ export function App() {
         rt.mountScene(scene);
         setLoaded(scene);
         setLiveParams({ ...scene.params });
-        document.title = `${scene.metadata.title} · Scenes`;
+        document.title = `${scene.metadata.title} · Scenie`;
       } catch (err) {
         if (cancelled) return;
         setError(userFacingError(err));
@@ -338,7 +338,7 @@ export function App() {
             <div
               role="tablist"
               aria-label="Sheet"
-              className="inline-flex h-8 min-w-0 items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground"
+              className="inline-flex h-8 min-w-0 items-center justify-center rounded-lg bg-muted p-0.75 text-muted-foreground"
             >
               {(
                 [
@@ -365,7 +365,7 @@ export function App() {
                     disabled={tab.disabled}
                     className={cn(
                       "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center rounded-md border border-transparent px-1.5 py-0.5 text-xs font-medium whitespace-nowrap transition-colors outline-none",
-                      "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                      "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30",
                       "disabled:pointer-events-none disabled:opacity-50",
                       active
                         ? "bg-background text-foreground dark:border-input dark:bg-input/30"
@@ -402,7 +402,7 @@ export function App() {
                   !loaded &&
                   !loading &&
                   error && (
-                    <p className="sheet-selectable text-xs text-muted-foreground break-words">
+                    <p className="sheet-selectable text-xs text-muted-foreground wrap-anywhere">
                       {error}
                     </p>
                   )}

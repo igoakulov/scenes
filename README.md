@@ -1,4 +1,4 @@
-# Scenes
+# Scenie
 
 Agent skill + local tools for interactive 2D/3D educational scenes and model showcases — plain Three.js content, with a CLI and browser viewer that own camera, chrome, and controls.
 
@@ -10,11 +10,11 @@ Agent skill + local tools for interactive 2D/3D educational scenes and model sho
 
 ### Pendulum homework
 
-*Screenshot pending.*
+![Example: Pendulum homework](examples/screenshots/example-pendulum-physics.png)
 
 ### Solar system
 
-*Screenshot pending.*
+![Example: Solar system](examples/screenshots/example-solar-system.png)
 
 ## Who it’s for
 
@@ -24,30 +24,36 @@ Agent skill + local tools for interactive 2D/3D educational scenes and model sho
 
 ## Install
 
-**With your agent (recommended)** — ask Claude Code/Cowork, ChatGPT Codex, or a similar agent to install and use the Scenes skill. It sets up the CLI and skill for you.
-
-**npm package** (Node ≥ 20):
+Ask your AI agent to run this command to install the [Scenie skill](https://github.com/igoakulov/scenie/blob/main/skills/scenie/SKILL.md):
 
 ```bash
-npm install -g scenes
-scenes init
+npx skills add igoakulov/scenie --skill scenie -g -y
+```
+
+The agent installs the skill and completes other install steps.
+
+### Manual / advanced
+
+**npm package** (Node ≥ 20) — CLI only; still install the skill as above:
+
+```bash
+npm install -g scenie
+scenie init
 ```
 
 **From this repo**:
 
 ```bash
-git clone https://github.com/igoakulov/scenes.git
-cd scenes
+git clone https://github.com/igoakulov/scenie.git
+cd scenie
 npm install          # builds CLI + viewer (prepare)
-npm link             # optional: put `scenes` on your PATH
-scenes init          # or without link: node bin/scenes.js init
+npm link             # optional: put `scenie` on your PATH
+scenie init          # or without link: node bin/scenie.js init
 ```
 
-IMPORTANT: must still install / point your agent at `scenes-skill`.
+### How to use
 
-## How to use
-
-1. Describe: explore the subject/concept with your agent and ask to create a scene with `scenes-skill`.
+1. Describe: explore the subject/concept with your agent and ask to create a scene with the Scenie skill.
 2. Explore: view the scene and its summary from your conversation with agent.
 3. Play: use live cards that change the scene, play animation, see how everything interacts!
 
@@ -63,7 +69,7 @@ IMPORTANT: must still install / point your agent at `scenes-skill`.
 
 ## Under the hood
 
-One npm package: skill + CLI + embedded viewer. Requires Node ≥ 20.
+Agent skill (git) + lightweight npm package (CLI + prebuilt viewer, **~0.5 MB**, **~6k LOC**). Requires Node ≥ 20.
 
 - Portable scene folders: `metadata.json` + plain Three.js `scene.js` (+ optional assets); no proprietary geometry DSL
 - Local viewer: library, summary (markdown + KaTeX), Explore cards, orbit (3D) / pan-zoom (2D), grid, play/pause, in-scene annotations

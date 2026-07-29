@@ -41,7 +41,7 @@ function AccordionTrigger({
         )}
         {...props}
       >
-        <span className="min-w-0 flex-1 break-words text-left">{children}</span>
+        <span className="min-w-0 flex-1 wrap-anywhere text-left">{children}</span>
         <ChevronDownIcon data-slot="accordion-trigger-icon" className="pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden" />
         <ChevronUpIcon data-slot="accordion-trigger-icon" className="pointer-events-none hidden shrink-0 group-aria-expanded/accordion-trigger:inline" />
       </AccordionPrimitive.Trigger>

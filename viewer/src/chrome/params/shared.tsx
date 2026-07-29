@@ -50,7 +50,7 @@ export function renderLeaf(
       return (
         <MathText
           text={node.text}
-          className="sheet-selectable min-w-0 break-words rounded-md border border-dashed border-muted-foreground/40 px-2 py-1.5 text-xs/relaxed text-muted-foreground [&_.katex]:text-foreground"
+          className="sheet-selectable min-w-0 wrap-anywhere rounded-md border border-dashed border-muted-foreground/40 px-2 py-1.5 text-xs/relaxed text-muted-foreground [&_.katex]:text-foreground"
         />
       );
     case "label":
@@ -61,12 +61,12 @@ export function renderLeaf(
           <MathText
             as="span"
             text={node.label}
-            className="max-w-[40%] shrink-0 break-words text-muted-foreground"
+            className="max-w-[40%] shrink-0 wrap-anywhere text-muted-foreground"
           />
           <MathText
             as="span"
             text={resolveLabelValue(node.value, params)}
-            className="sheet-selectable min-w-0 flex-1 break-words text-right font-mono text-foreground [overflow-wrap:anywhere]"
+            className="sheet-selectable min-w-0 flex-1 wrap-anywhere text-right font-mono text-foreground"
           />
         </div>
       );

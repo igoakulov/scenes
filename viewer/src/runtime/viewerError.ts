@@ -4,8 +4,8 @@
  */
 
 const REFRESH = "Refresh the page or reopen the scene from the Library.";
-const SHOW_RUNNING = "Check that `scenes show` is still running, then refresh.";
-const VALIDATE_HINT = "Ask your agent to fix it (or run `scenes validate`).";
+const SHOW_RUNNING = "Check that `scenie show` is still running, then refresh.";
+const VALIDATE_HINT = "Ask your agent to fix it (or run `scenie validate`).";
 
 export function userFacingError(err: unknown): string {
   const raw = err instanceof Error ? err.message : String(err);

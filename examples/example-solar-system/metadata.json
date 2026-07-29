@@ -1,0 +1,10 @@
+{
+  "title": "Example: Solar system",
+  "description": "TODO: fill from cold-run scene — high-detail solar system fly-around showcase. Prompt: examples/prompts/example-solar-system.md",
+  "tags": ["example", "solar-system", "showcase", "3d", "astronomy"],
+  "dimensions": 3,
+  "attribution": {
+    "author": "igoakulov",
+    "model": "TODO"
+  }
+}

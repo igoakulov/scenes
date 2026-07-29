@@ -17,7 +17,7 @@ import { sceneExists } from "../workspace.js";
 export async function cmdShow(id: string | undefined): Promise<number> {
   const config = await readConfig();
   if (!config) {
-    throw new Error("no workspace — run: scenes init");
+    throw new Error("no workspace — run: scenie init");
   }
   const workspace = await requireWorkspace();
   printWorkspace(workspace);

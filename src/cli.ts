@@ -36,7 +36,7 @@ async function main(): Promise<number> {
         return await cmdShow(positionals[0]);
       default:
         console.error(`Unknown command: ${command}`);
-        console.error("Run `scenes help` for usage.");
+        console.error("Run `scenie help` for usage.");
         return 1;
     }
   } catch (err) {

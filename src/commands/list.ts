@@ -11,7 +11,7 @@ export async function cmdList(): Promise<number> {
 
   if (!(await hasScenesDir(workspace))) {
     // Not the same as empty scenes/ — layout missing (wrong path or never inited).
-    printHint("no scenes/ under workspace — check path or: scenes init");
+    printHint("no scenes/ under workspace — check path or: scenie init");
     return 0;
   }
 
@@ -43,7 +43,7 @@ export async function cmdList(): Promise<number> {
   }
 
   if (hadWarning) {
-    printHint("scenes validate");
+    printHint("scenie validate");
   }
   return 0;
 }

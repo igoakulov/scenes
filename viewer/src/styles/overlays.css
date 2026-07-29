@@ -7,7 +7,6 @@
   overflow-x: hidden;
   overflow-y: hidden;
   overflow-wrap: anywhere;
-  word-break: break-word;
 }
 
 .summary-md > :first-child {
@@ -31,7 +30,6 @@
   max-width: 100%;
   min-width: 0;
   overflow-wrap: anywhere;
-  word-break: break-word;
 }
 
 /* Dense sheet: readable hierarchy without browser-size page titles */
@@ -89,7 +87,6 @@
 .summary-md code {
   font-size: inherit;
   overflow-wrap: anywhere;
-  word-break: break-word;
 }
 
 .summary-md pre code {
@@ -121,7 +118,6 @@
   padding: 0.2em 0.45em;
   text-align: left;
   overflow-wrap: anywhere;
-  word-break: break-word;
   vertical-align: top;
 }
 
@@ -129,7 +125,6 @@
   color: inherit;
   text-decoration: none;
   overflow-wrap: anywhere;
-  word-break: break-word;
 }
 .summary-md a:hover {
   color: var(--foreground);

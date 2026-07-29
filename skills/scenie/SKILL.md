@@ -1,27 +1,26 @@
 ---
-name: scenes
+name: scenie
 description: >-
   Create interactive educational scenes (~ pure Three.js) with
-  Scenes CLI + local viewer. Use to help user create or view scene.
+  Scenie CLI + local viewer. Use to help user create or view scene.
 ---
 
-# Scenes
+# Scenie
 
-You are teacher with Three.js expertise. You use it to teach STEM subjects and concepts visually and interactively. Package includes plain Three.js scene folders + `scenes` CLI + local viewer. Content under `host.root`; runtime owns loop, chrome, and defaults unless opted out.
+You are teacher with Three.js expertise. You use it to teach STEM subjects and concepts visually and interactively. Package includes plain Three.js scene folders + `scenie` CLI + local viewer. Content under `host.root`; runtime owns loop, chrome, and defaults unless opted out.
 
 ## Install
 
 ```bash
-# TODO: until published — npm install -g /path/to/scenes  (or npm link from checkout)
-npm install -g scenes
-scenes init [path]             # once; omit path → cwd
+npm install -g scenie          # Node ≥ 20; or npm link from checkout
+scenie init [path]             # once; omit path → cwd
 ```
 
-Create launcher file for user on Desktop or workspace: `/abs/path/scenes show`
+Create launcher file for user on Desktop or workspace: `/abs/path/scenie show`
 
 ## Workspace
 
-- CONFIG: `~/.config/scenes/config.json` — `workspace`, optional `port`
+- CONFIG: `~/.config/scenie/config.json` — `workspace`, optional `port`
 - Scene id = kebab-case folder name; optional leading `.` (see Versioning)
 
 ```text
@@ -96,7 +95,7 @@ Optional `export function update(host, t, dt)` — ONLY if content must change w
 
 ### Interactive cards
 
-`export function params()` → array of `{ type, … }` nodes (or omit / `[]`); same shape in card `children[]`. Host shows cards; editable fields fill flat `host.params`. Unknown `type` fails `scenes validate`.
+`export function params()` → array of `{ type, … }` nodes (or omit / `[]`); same shape in card `children[]`. Host shows cards; editable fields fill flat `host.params`. Unknown `type` fails `scenie validate`.
 
 DISPLAY types (no `key`, not in `host.params`):
 
@@ -115,7 +114,7 @@ EDITABLE types (each has key, label, default → `host.params`):
 LIFECYCLE
 
 - User edits field → optional `onParamsChange(params, change)` with `change = { key, value }` MUST return next flat bag (return value authoritative) → host clears `host.root` and re-runs `setup(host)`.
-- Optional `validateParams(params)` → soft issues `[{ key?, message, cardId? }…]` or `[]` — CLI `scenes validate` on defaults only (not live UI).
+- Optional `validateParams(params)` → soft issues `[{ key?, message, cardId? }…]` or `[]` — CLI `scenie validate` on defaults only (not live UI).
 
 RULES
 
@@ -214,7 +213,7 @@ export function onParamsChange(params, change) {
   return params;
 }
 
-// optional: CLI scenes validate on defaults; [] = ok
+// optional: CLI scenie validate on defaults; [] = ok
 export function validateParams(params) {
   if (String(params.points || "").split(";").filter((s) => s.trim()).length < 2) {
     return [{ key: "points", message: "need at least two points" }];
@@ -226,12 +225,12 @@ export function validateParams(params) {
 ## Loop (agent)
 
 ```bash
-scenes list                    # workspace /abs/path
+scenie list                    # workspace /abs/path
 cd /abs/path
 mkdir -p scenes/my-scene
 # write metadata.json + scene.js
-scenes validate my-scene
-scenes show my-scene           # keep running; or scenes show for library
+scenie validate my-scene
+scenie show my-scene           # keep running; or scenie show for library
 ```
 
 Edits → tell user to refresh browser. Restart show only: switch id, dead server, or free port — then reopen/refresh URL.
@@ -247,4 +246,4 @@ For more: use git.
 
 ## Reference
 
-https://github.com/igoakulov/scenes
+https://github.com/igoakulov/scenie

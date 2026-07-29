@@ -19,11 +19,12 @@ export type StartView = {
  * Returns null if none.
  */
 export function takeAgentStartCamera(root: THREE.Object3D): StartView | null {
-  let agent: THREE.Camera | null = null;
+  // Collect outside the callback — TS does not treat traverse assignments as narrowing.
+  const cameras: THREE.Camera[] = [];
   root.traverse((o) => {
-    if (agent) return;
-    if (o instanceof THREE.Camera) agent = o;
+    if (o instanceof THREE.Camera) cameras.push(o);
   });
+  const agent = cameras[0];
   if (!agent) return null;
 
   root.updateWorldMatrix(true, true);

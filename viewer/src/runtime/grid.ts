@@ -50,7 +50,7 @@ export class GridController {
   private state: GridState = { ...DEFAULT_GRID };
 
   constructor() {
-    this.group.name = "__scenes_grid__";
+    this.group.name = "__scenie_grid__";
     // Draw before scene content; materials use LessDepth so coplanar scene wins.
     this.group.renderOrder = -1;
     this.rebuild();

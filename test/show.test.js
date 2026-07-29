@@ -14,14 +14,14 @@ import { spawn } from "node:child_process";
 import http from "node:http";
 
 const root = join(fileURLToPath(new URL(".", import.meta.url)), "..");
-const bin = join(root, "bin/scenes.js");
+const bin = join(root, "bin/scenie.js");
 const fixtures = join(root, "test/fixtures");
 
-function runScenes(args, env, opts = {}) {
+function runScenie(args, env, opts = {}) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [bin, ...args], {
       env: { ...process.env, ...env },
-      cwd: env.SCENES_TEST_CWD || root,
+      cwd: env.SCENIE_TEST_CWD || root,
     });
     let stdout = "";
     let stderr = "";
@@ -61,38 +61,38 @@ function httpGet(url) {
 
 describe("show", () => {
   it("fails when scene not found", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-ws-"));
-    const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
-    const env = { SCENES_CONFIG_DIR: configDir };
-    await runScenes(["init", workspace], env);
-    const r = await runScenes(["show", "missing-scene"], env);
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-ws-"));
+    const configDir = await mkdtemp(join(tmpdir(), "scenie-cfg-"));
+    const env = { SCENIE_CONFIG_DIR: configDir };
+    await runScenie(["init", workspace], env);
+    const r = await runScenie(["show", "missing-scene"], env);
     assert.equal(r.code, 1);
     await rm(workspace, { recursive: true, force: true });
     await rm(configDir, { recursive: true, force: true });
   });
 
   it("fails validate gate on bad scene", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-ws-"));
-    const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
-    const env = { SCENES_CONFIG_DIR: configDir };
-    await runScenes(["init", workspace], env);
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-ws-"));
+    const configDir = await mkdtemp(join(tmpdir(), "scenie-cfg-"));
+    const env = { SCENIE_CONFIG_DIR: configDir };
+    await runScenie(["init", workspace], env);
     await cp(
       join(fixtures, "invalid-metadata"),
       join(workspace, "scenes", "bad"),
       { recursive: true },
     );
-    const r = await runScenes(["show", "bad"], env);
+    const r = await runScenie(["show", "bad"], env);
     assert.equal(r.code, 1);
     await rm(workspace, { recursive: true, force: true });
     await rm(configDir, { recursive: true, force: true });
   });
 
   it("listens and serves viewer + scene file + /api/scenes", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-ws-"));
-    const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-ws-"));
+    const configDir = await mkdtemp(join(tmpdir(), "scenie-cfg-"));
     const port = 19000 + Math.floor(Math.random() * 1000);
-    const env = { SCENES_CONFIG_DIR: configDir };
-    await runScenes(["init", workspace], env);
+    const env = { SCENIE_CONFIG_DIR: configDir };
+    await runScenie(["init", workspace], env);
     const cfgPath = join(configDir, "config.json");
     const cfg = JSON.parse(await readFile(cfgPath, "utf8"));
     cfg.port = port;
@@ -113,7 +113,7 @@ describe("show", () => {
     );
 
     let listenUrl = "";
-    const rPromise = runScenes(["show", "demo"], env, {
+    const rPromise = runScenie(["show", "demo"], env, {
       timeoutMs: 15000,
       onStdout(stdout, _stderr, child) {
         const m = stdout.match(/^listen (\S+)/m);
@@ -123,7 +123,7 @@ describe("show", () => {
             try {
               const page = await httpGet(listenUrl);
               assert.equal(page.status, 200);
-              assert.match(page.body, /root|Scenes/i);
+              assert.match(page.body, /root|Scenie/i);
 
               const sceneJs = await httpGet(
                 `http://127.0.0.1:${port}/ws/scenes/demo/scene.js`,
@@ -176,18 +176,18 @@ describe("show", () => {
   });
 
   it("show without id serves", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-ws-"));
-    const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-ws-"));
+    const configDir = await mkdtemp(join(tmpdir(), "scenie-cfg-"));
     const port = 20000 + Math.floor(Math.random() * 1000);
-    const env = { SCENES_CONFIG_DIR: configDir };
-    await runScenes(["init", workspace], env);
+    const env = { SCENIE_CONFIG_DIR: configDir };
+    await runScenie(["init", workspace], env);
     const cfgPath = join(configDir, "config.json");
     const cfg = JSON.parse(await readFile(cfgPath, "utf8"));
     cfg.port = port;
     await writeFile(cfgPath, JSON.stringify(cfg, null, 2) + "\n");
 
     let gotListen = false;
-    const rPromise = runScenes(["show"], env, {
+    const rPromise = runScenie(["show"], env, {
       timeoutMs: 12000,
       onStdout(stdout, _stderr, child) {
         const m = stdout.match(/^listen (\S+)/m);

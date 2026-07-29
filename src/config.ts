@@ -4,14 +4,14 @@ import { join } from "node:path";
 import type { AppConfig } from "./types.js";
 
 export function getConfigDir(): string {
-  if (process.env.SCENES_CONFIG_DIR) {
-    return process.env.SCENES_CONFIG_DIR;
+  if (process.env.SCENIE_CONFIG_DIR) {
+    return process.env.SCENIE_CONFIG_DIR;
   }
   if (process.platform === "win32") {
     const base = process.env.APPDATA ?? join(homedir(), "AppData", "Roaming");
-    return join(base, "scenes");
+    return join(base, "scenie");
   }
-  return join(homedir(), ".config", "scenes");
+  return join(homedir(), ".config", "scenie");
 }
 
 export function getConfigPath(): string {
@@ -66,7 +66,7 @@ export async function writeConfig(config: AppConfig): Promise<void> {
 export async function requireWorkspace(): Promise<string> {
   const config = await readConfig();
   if (!config) {
-    throw new Error("no workspace — run: scenes init");
+    throw new Error("no workspace — run: scenie init");
   }
   return config.workspace;
 }

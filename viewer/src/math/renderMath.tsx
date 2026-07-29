@@ -51,7 +51,7 @@ export function MathText({
   return (
     <Tag
       className={cn(
-        "min-w-0 break-words [overflow-wrap:anywhere] [&_.katex]:text-inherit",
+        "min-w-0 wrap-anywhere [&_.katex]:text-inherit",
         Tag === "span" && "inline",
         className,
       )}

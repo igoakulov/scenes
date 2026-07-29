@@ -2,8 +2,6 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { renderDescriptionHtml } from "./renderDescription";
 
-export { renderDescriptionHtml } from "./renderDescription";
-
 export function DescriptionText({
   text,
   className,
@@ -14,7 +12,7 @@ export function DescriptionText({
   return (
     <div
       className={cn(
-        "summary-md min-w-0 break-words text-xs/relaxed [overflow-wrap:anywhere]",
+        "summary-md min-w-0 text-xs/relaxed",
         className,
       )}
       dangerouslySetInnerHTML={{ __html: renderDescriptionHtml(text) }}

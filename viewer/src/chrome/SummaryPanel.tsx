@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import type { SceneMetadata } from "../runtime/loadScene";
-import { DescriptionText } from "../math/renderDescription.tsx";
+import { DescriptionText } from "../math/DescriptionText";
 import { Button } from "@/components/ui/button";
 
 /** Copy control pastes `id: "title"` for agent reference. */
@@ -83,7 +83,7 @@ export function SummaryPanel({
             {attributionRows.map(([key, value]) => (
               <li
                 key={key}
-                className="sheet-selectable m-0 min-w-0 break-words text-xs/relaxed text-muted-foreground [overflow-wrap:anywhere]"
+                className="sheet-selectable m-0 min-w-0 wrap-anywhere text-xs/relaxed text-muted-foreground"
               >
                 {key}: {value}
               </li>

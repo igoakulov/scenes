@@ -22,7 +22,7 @@ export async function cmdValidate(id: string | undefined): Promise<number> {
     ids = [id];
   } else {
     if (!(await hasScenesDir(workspace))) {
-      printHint("no scenes/ under workspace — check path or: scenes init");
+      printHint("no scenes/ under workspace — check path or: scenie init");
       return 0;
     }
     ids = await listSceneIds(workspace);

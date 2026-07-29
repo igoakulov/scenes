@@ -16,14 +16,14 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 
 const root = join(fileURLToPath(new URL(".", import.meta.url)), "..");
-const bin = join(root, "bin/scenes.js");
+const bin = join(root, "bin/scenie.js");
 const fixtures = join(root, "test/fixtures");
 
-function runScenes(args, env) {
+function runScenie(args, env) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [bin, ...args], {
       env: { ...process.env, ...env },
-      cwd: env.SCENES_TEST_CWD || root,
+      cwd: env.SCENIE_TEST_CWD || root,
     });
     let stdout = "";
     let stderr = "";
@@ -41,18 +41,18 @@ function runScenes(args, env) {
 
 describe("CLI", () => {
   it("fails without workspace", async () => {
-    const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
-    const r = await runScenes(["list"], { SCENES_CONFIG_DIR: configDir });
+    const configDir = await mkdtemp(join(tmpdir(), "scenie-cfg-"));
+    const r = await runScenie(["list"], { SCENIE_CONFIG_DIR: configDir });
     assert.equal(r.code, 1);
     await rm(configDir, { recursive: true, force: true });
   });
 
   it("init + list (no scene.js import) + validate", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-ws-"));
-    const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
-    const env = { SCENES_CONFIG_DIR: configDir };
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-ws-"));
+    const configDir = await mkdtemp(join(tmpdir(), "scenie-cfg-"));
+    const env = { SCENIE_CONFIG_DIR: configDir };
 
-    let r = await runScenes(["init", workspace], env);
+    let r = await runScenie(["init", workspace], env);
     assert.equal(r.code, 0, r.stderr);
 
     const config = JSON.parse(
@@ -87,16 +87,16 @@ describe("CLI", () => {
       `throw new Error("scene.js must not be imported by list");\nexport function setup() {}\n`,
     );
 
-    r = await runScenes(["list"], env);
+    r = await runScenie(["list"], env);
     assert.equal(r.code, 0, r.stderr + r.stdout);
 
-    r = await runScenes(["validate", "demo"], env);
+    r = await runScenie(["validate", "demo"], env);
     assert.equal(r.code, 0, r.stderr + r.stdout);
 
-    r = await runScenes(["validate", ".demo-bak"], env);
+    r = await runScenie(["validate", ".demo-bak"], env);
     assert.equal(r.code, 0, r.stderr + r.stdout);
 
-    r = await runScenes(["validate", "bomb"], env);
+    r = await runScenie(["validate", "bomb"], env);
     assert.equal(r.code, 1);
 
     await rm(workspace, { recursive: true, force: true });
@@ -104,11 +104,11 @@ describe("CLI", () => {
   });
 
   it("init defaults to cwd", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-cwd-"));
-    const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
-    const r = await runScenes(["init"], {
-      SCENES_CONFIG_DIR: configDir,
-      SCENES_TEST_CWD: workspace,
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-cwd-"));
+    const configDir = await mkdtemp(join(tmpdir(), "scenie-cfg-"));
+    const r = await runScenie(["init"], {
+      SCENIE_CONFIG_DIR: configDir,
+      SCENIE_TEST_CWD: workspace,
     });
     assert.equal(r.code, 0, r.stderr);
     const config = JSON.parse(
@@ -121,11 +121,11 @@ describe("CLI", () => {
   });
 
   it("init seeds example scenes without overwriting", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-seed-"));
-    const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
-    const env = { SCENES_CONFIG_DIR: configDir };
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-seed-"));
+    const configDir = await mkdtemp(join(tmpdir(), "scenie-cfg-"));
+    const env = { SCENIE_CONFIG_DIR: configDir };
 
-    let r = await runScenes(["init", workspace], env);
+    let r = await runScenie(["init", workspace], env);
     assert.equal(r.code, 0, r.stderr + r.stdout);
 
     const exampleId = "example-linear-algebra";
@@ -138,13 +138,13 @@ describe("CLI", () => {
     await assert.rejects(() => access(join(workspace, "scenes", "prompts")));
     await assert.rejects(() => access(join(workspace, "scenes", "screenshots")));
 
-    r = await runScenes(["validate", exampleId], env);
+    r = await runScenie(["validate", exampleId], env);
     assert.equal(r.code, 0, r.stderr + r.stdout);
 
     // mutate + re-init must not overwrite
     const marker = '{"title":"USER EDIT","description":"keep","tags":[],"dimensions":3}';
     await writeFile(metaPath, marker);
-    r = await runScenes(["init", workspace], env);
+    r = await runScenie(["init", workspace], env);
     assert.equal(r.code, 0, r.stderr + r.stdout);
     assert.equal(await readFile(metaPath, "utf8"), marker);
 
@@ -153,12 +153,12 @@ describe("CLI", () => {
   });
 
   it("bare init uses config path and can re-seed", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-cfgws-"));
-    const otherCwd = await mkdtemp(join(tmpdir(), "scenes-othercwd-"));
-    const configDir = await mkdtemp(join(tmpdir(), "scenes-cfg-"));
-    const env = { SCENES_CONFIG_DIR: configDir };
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-cfgws-"));
+    const otherCwd = await mkdtemp(join(tmpdir(), "scenie-othercwd-"));
+    const configDir = await mkdtemp(join(tmpdir(), "scenie-cfg-"));
+    const env = { SCENIE_CONFIG_DIR: configDir };
 
-    let r = await runScenes(["init", workspace], env);
+    let r = await runScenie(["init", workspace], env);
     assert.equal(r.code, 0, r.stderr + r.stdout);
 
     await rm(join(workspace, "scenes", "example-linear-algebra"), {
@@ -166,9 +166,9 @@ describe("CLI", () => {
       force: true,
     });
 
-    r = await runScenes(["init"], {
+    r = await runScenie(["init"], {
       ...env,
-      SCENES_TEST_CWD: otherCwd,
+      SCENIE_TEST_CWD: otherCwd,
     });
     assert.equal(r.code, 0, r.stderr + r.stdout);
     await access(join(workspace, "scenes", "example-linear-algebra", "scene.js"));

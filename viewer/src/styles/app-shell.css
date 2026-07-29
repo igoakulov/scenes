@@ -67,7 +67,6 @@ body,
   line-height: 1.4;
   color: var(--destructive);
   overflow-wrap: anywhere;
-  word-break: break-word;
 }
 
 /* Always top-right of the window (over sheet header when open). One node, no flash. */

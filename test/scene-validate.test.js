@@ -19,14 +19,14 @@ async function copyFixture(name, workspace, id = name) {
 
 describe("validateScene", () => {
   it("accepts valid scene (metadata defaults + three import)", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-val-"));
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-val-"));
     await copyFixture("valid-basic", workspace, "valid-basic");
     const result = await validateScene(workspace, "valid-basic");
     assert.equal(result.ok, true, JSON.stringify(result.issues, null, 2));
   });
 
   it("fails invalid metadata", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-val-"));
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-val-"));
     await copyFixture("invalid-metadata", workspace, "bad-meta");
     const result = await validateScene(workspace, "bad-meta");
     assert.equal(result.ok, false);
@@ -34,7 +34,7 @@ describe("validateScene", () => {
   });
 
   it("fails when validateParams rejects defaults", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-val-"));
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-val-"));
     await copyFixture("valid-params-fail", workspace, "params-fail");
     const result = await validateScene(workspace, "params-fail");
     assert.equal(result.ok, false);
@@ -42,7 +42,7 @@ describe("validateScene", () => {
   });
 
   it("accepts valid runtime export and rejects bad keys/types/null", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-val-"));
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-val-"));
     await copyFixture("valid-basic", workspace, "rt-ok");
     const { writeFile } = await import("node:fs/promises");
     const dir = join(workspace, "scenes", "rt-ok");
@@ -103,7 +103,7 @@ export function setup() {}
   });
 
   it("accepts update function and rejects non-function update", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-val-"));
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-val-"));
     await copyFixture("valid-basic", workspace, "upd-ok");
     const { writeFile } = await import("node:fs/promises");
     const dir = join(workspace, "scenes", "upd-ok");
@@ -137,7 +137,7 @@ export const update = 1;
   });
 
   it("accepts full runtime opt-out with update", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-val-"));
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-val-"));
     await copyFixture("valid-basic", workspace, "full-opt");
     const { writeFile } = await import("node:fs/promises");
     const dir = join(workspace, "scenes", "full-opt");
@@ -165,7 +165,7 @@ export function update(host, t, dt) {
   });
 
   it("does not require dispose and ignores its presence", async () => {
-    const workspace = await mkdtemp(join(tmpdir(), "scenes-val-"));
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-val-"));
     await copyFixture("valid-basic", workspace, "with-dispose");
     const { writeFile } = await import("node:fs/promises");
     await writeFile(

@@ -1,4 +1,4 @@
-My physics textbook is showing just a 2d image for this. Can you visualize with animation using the Scenes skill?
+My physics textbook is showing just a 2d image for this. Can you visualize with animation using the Scenie skill?
 
 A simple pendulum of length L = 0.80 m is suspended from a fixed support. The bob has mass m = 0.25 kg. At rest the pendulum hangs vertically. The bob is then pulled aside so the string makes an angle θ₀ = 30° with the vertical and is released from rest.
 

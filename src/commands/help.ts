@@ -6,7 +6,7 @@ import {
 } from "../print.js";
 
 export async function cmdHelp(): Promise<number> {
-  console.log(`scenes — agent-authored Three.js scenes
+  console.log(`scenie — agent-authored Three.js scenes
 
 cmds:
   init [path] [--force]  set workspace (path|config|cwd)
@@ -17,7 +17,7 @@ cmds:
 
 layout: <workspace>/scenes/<id>/{metadata.json,scene.js,assets?/}
   id: kebab-case; leading . = hidden from viewer Library only (CLI list/validate/show still work)
-config: ~/.config/scenes/config.json  (win: %APPDATA%\\scenes\\)
+config: ~/.config/scenie/config.json  (win: %APPDATA%\\scenie\\)
 meta: title, description, tags[]; optional dimensions 2|3 (default 3)
 
 output (see docs/shell.md):

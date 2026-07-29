@@ -9,7 +9,7 @@ export function printWorkspace(workspace: string, fromConfig = false): void {
 }
 
 export function printWorkspaceNone(): void {
-  console.log("workspace (none — run scenes init)");
+  console.log("workspace (none — run scenie init)");
 }
 
 export function printWorkspaceErr(message: string): void {

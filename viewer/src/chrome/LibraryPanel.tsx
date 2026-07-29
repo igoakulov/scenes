@@ -15,8 +15,13 @@ type ExamplePrompt = {
   body: string;
 };
 
-const SCENES_SKILL_URL =
-  "https://github.com/igoakulov/scenes/blob/main/scenes-skill/SKILL.md";
+const SCENIE_SKILL_URL =
+  "https://github.com/igoakulov/scenie/blob/main/skills/scenie/SKILL.md";
+
+const SKILL_INSTALL_CMD =
+  "npx skills add igoakulov/scenie --skill scenie -g -y";
+
+const INIT_CMD = "scenie init";
 
 async function fetchSceneList(): Promise<SceneListEntry[]> {
   const res = await fetch("/api/scenes", { cache: "no-store" });
@@ -73,17 +78,56 @@ function SectionHeading({
   );
 }
 
-function PromptCard({ prompt }: { prompt: ExamplePrompt }) {
+function useCopyText(text: string) {
   const [copied, setCopied] = useState(false);
   const copy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(prompt.body);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
       // ignore
     }
-  }, [prompt.body]);
+  }, [text]);
+  return { copied, copy };
+}
+
+/** Flat command + copy — setup actions, not scene prompts. */
+function CommandRow({
+  command,
+  copyLabel,
+}: {
+  command: string;
+  copyLabel: string;
+}) {
+  const { copied, copy } = useCopyText(command);
+
+  return (
+    <div className="flex min-w-0 items-start gap-1 px-0.5">
+      <code className="sheet-selectable m-0 min-w-0 flex-1 wrap-anywhere font-mono text-xs/relaxed text-foreground">
+        {command}
+      </code>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        className="shrink-0 text-muted-foreground"
+        title={copied ? "Copied" : copyLabel}
+        aria-label={copied ? "Copied" : copyLabel}
+        onClick={() => void copy()}
+      >
+        {copied ? (
+          <CheckIcon data-icon="inline-start" />
+        ) : (
+          <CopyIcon data-icon="inline-start" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
+function PromptCard({ prompt }: { prompt: ExamplePrompt }) {
+  const { copied, copy } = useCopyText(prompt.body);
 
   return (
     <div className="min-w-0 rounded-md border border-border px-2 py-1.5">
@@ -107,7 +151,7 @@ function PromptCard({ prompt }: { prompt: ExamplePrompt }) {
           )}
         </Button>
       </div>
-      <pre className="sheet-selectable m-0 mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap break-words font-sans text-xs/relaxed text-muted-foreground">
+      <pre className="sheet-selectable m-0 mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap wrap-anywhere font-sans text-xs/relaxed text-muted-foreground">
         {prompt.body}
       </pre>
     </div>
@@ -116,21 +160,38 @@ function PromptCard({ prompt }: { prompt: ExamplePrompt }) {
 
 function EmptyLibrary({ prompts }: { prompts: ExamplePrompt[] | null }) {
   return (
-    <div className="flex min-w-0 flex-col gap-3 px-2">
-      <p className="sheet-selectable m-0 text-xs/relaxed text-muted-foreground">
-        Ask your AI agent to create a scene with{" "}
-        <a
-          href={SCENES_SKILL_URL}
-          className="text-foreground/90 hover:text-foreground"
-          target="_blank"
-          rel="noreferrer"
-        >
-          scenes-skill
-        </a>
-        . Copy an example prompt below, or describe your own topic.
-      </p>
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <p className="sheet-selectable m-0 text-xs/relaxed text-muted-foreground">
+          Ask your AI agent to run this command to install the{" "}
+          <a
+            href={SCENIE_SKILL_URL}
+            className="text-foreground/90 hover:text-foreground"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Scenie skill
+          </a>
+          :
+        </p>
+        <CommandRow
+          command={SKILL_INSTALL_CMD}
+          copyLabel="Copy skill install command"
+        />
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <p className="sheet-selectable m-0 text-xs/relaxed text-muted-foreground">
+          Add example scenes to library — ask AI agent to run:
+        </p>
+        <CommandRow command={INIT_CMD} copyLabel="Copy scenie init command" />
+      </div>
+
       {prompts && prompts.length > 0 && (
         <div className="flex min-w-0 flex-col gap-2">
+          <p className="sheet-selectable m-0 text-xs/relaxed text-muted-foreground">
+            Or ask your agent to make a new scene:
+          </p>
           {prompts.map((p) => (
             <PromptCard key={p.id} prompt={p} />
           ))}

@@ -1,0 +1,10 @@
+{
+  "title": "Example: Pendulum homework",
+  "description": "TODO: fill from cold-run scene — simple pendulum homework (energy, tension, free-body). Prompt: examples/prompts/example-pendulum-physics.md",
+  "tags": ["example", "pendulum", "physics", "education", "homework"],
+  "dimensions": 2,
+  "attribution": {
+    "author": "igoakulov",
+    "model": "TODO"
+  }
+}
