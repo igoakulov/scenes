@@ -26,8 +26,8 @@ import {
 import { rootHasAgentLight, stripAgentCameras } from "./sceneOwnership";
 import { SceneSideEffects } from "./sceneSideEffects";
 
-/** Match shadcn dark --background (zinc). */
-const BG = 0x18181b;
+/** Match shadcn dark --background (zinc-950). */
+const BG = 0x09090b;
 
 const IDLE_ORBIT_SPEED = 1.0;
 

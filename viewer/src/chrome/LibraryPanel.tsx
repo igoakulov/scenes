@@ -1,19 +1,12 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 import { userFacingError } from "../runtime/viewerError";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { CopyHitbox } from "./CopyHitbox";
 
 export interface SceneListEntry {
   id: string;
   title?: string;
 }
-
-type ExamplePrompt = {
-  id: string;
-  title: string;
-  body: string;
-};
 
 const SCENIE_SKILL_URL =
   "https://github.com/igoakulov/scenie/blob/main/skills/scenie/SKILL.md";
@@ -22,6 +15,9 @@ const SKILL_INSTALL_CMD =
   "npx skills add igoakulov/scenie --skill scenie -g -y";
 
 const INIT_CMD = "scenie init";
+
+const NEW_SCENE_PROMPT =
+  "With Scenie skill, create a scene with ...";
 
 async function fetchSceneList(): Promise<SceneListEntry[]> {
   const res = await fetch("/api/scenes", { cache: "no-store" });
@@ -38,26 +34,6 @@ async function fetchSceneList(): Promise<SceneListEntry[]> {
       typeof row === "object" &&
       typeof (row as SceneListEntry).id === "string" &&
       (row as SceneListEntry).id.length > 0,
-  );
-}
-
-async function fetchExamplePrompts(): Promise<ExamplePrompt[]> {
-  const res = await fetch("/api/example-prompts", { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  const data = (await res.json()) as unknown;
-  if (!Array.isArray(data)) {
-    return [];
-  }
-  return data.filter(
-    (row): row is ExamplePrompt =>
-      row !== null &&
-      typeof row === "object" &&
-      typeof (row as ExamplePrompt).id === "string" &&
-      typeof (row as ExamplePrompt).title === "string" &&
-      typeof (row as ExamplePrompt).body === "string" &&
-      (row as ExamplePrompt).body.length > 0,
   );
 }
 
@@ -78,92 +54,34 @@ function SectionHeading({
   );
 }
 
-function useCopyText(text: string) {
-  const [copied, setCopied] = useState(false);
-  const copy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // ignore
-    }
-  }, [text]);
-  return { copied, copy };
-}
-
-/** Flat command + copy — setup actions, not scene prompts. */
-function CommandRow({
-  command,
-  copyLabel,
+/** Copyable line — mono for shell commands, sans for prose prompts. */
+function CopyRow({
+  text,
+  mono = true,
 }: {
-  command: string;
-  copyLabel: string;
+  text: string;
+  mono?: boolean;
 }) {
-  const { copied, copy } = useCopyText(command);
-
   return (
-    <div className="flex min-w-0 items-start gap-1 px-0.5">
-      <code className="sheet-selectable m-0 min-w-0 flex-1 wrap-anywhere font-mono text-xs/relaxed text-foreground">
-        {command}
-      </code>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
-        className="shrink-0 text-muted-foreground"
-        title={copied ? "Copied" : copyLabel}
-        aria-label={copied ? "Copied" : copyLabel}
-        onClick={() => void copy()}
-      >
-        {copied ? (
-          <CheckIcon data-icon="inline-start" />
-        ) : (
-          <CopyIcon data-icon="inline-start" />
-        )}
-      </Button>
-    </div>
+    <CopyHitbox
+      text={text}
+      contentClassName={mono ? "font-mono" : "font-sans"}
+    >
+      {text}
+    </CopyHitbox>
   );
 }
 
-function PromptCard({ prompt }: { prompt: ExamplePrompt }) {
-  const { copied, copy } = useCopyText(prompt.body);
-
+function EmptyLibrary() {
   return (
-    <div className="min-w-0 rounded-md border border-border px-2 py-1.5">
-      <div className="flex min-w-0 items-start gap-1">
-        <p className="m-0 min-w-0 flex-1 text-xs font-medium text-foreground">
-          {prompt.title}
-        </p>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          className="shrink-0 text-muted-foreground"
-          title={copied ? "Copied" : "Copy prompt"}
-          aria-label={copied ? "Copied" : `Copy prompt: ${prompt.title}`}
-          onClick={() => void copy()}
-        >
-          {copied ? (
-            <CheckIcon data-icon="inline-start" />
-          ) : (
-            <CopyIcon data-icon="inline-start" />
-          )}
-        </Button>
-      </div>
-      <pre className="sheet-selectable m-0 mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap wrap-anywhere font-sans text-xs/relaxed text-muted-foreground">
-        {prompt.body}
-      </pre>
-    </div>
-  );
-}
+    <div className="flex min-w-0 flex-col gap-3 text-xs/relaxed text-muted-foreground">
+      <h2 className="m-0 text-sm font-medium tracking-tight text-foreground">
+        Create scenes
+      </h2>
 
-function EmptyLibrary({ prompts }: { prompts: ExamplePrompt[] | null }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-4">
       <div className="flex min-w-0 flex-col gap-1.5">
-        <p className="sheet-selectable m-0 text-xs/relaxed text-muted-foreground">
-          Ask your AI agent to run this command to install the{" "}
+        <p className="sheet-selectable m-0">
+          1. Ask your AI agent to run this command to install the{" "}
           <a
             href={SCENIE_SKILL_URL}
             className="text-foreground/90 hover:text-foreground"
@@ -174,36 +92,32 @@ function EmptyLibrary({ prompts }: { prompts: ExamplePrompt[] | null }) {
           </a>
           :
         </p>
-        <CommandRow
-          command={SKILL_INSTALL_CMD}
-          copyLabel="Copy skill install command"
-        />
+        <CopyRow text={SKILL_INSTALL_CMD} />
       </div>
 
-      <div className="flex min-w-0 flex-col gap-1.5">
-        <p className="sheet-selectable m-0 text-xs/relaxed text-muted-foreground">
-          Add example scenes to library — ask AI agent to run:
+      <div className="flex min-w-0 flex-col gap-2.5">
+        <p className="sheet-selectable m-0">
+          2. Ask your AI agent to add scenes
         </p>
-        <CommandRow command={INIT_CMD} copyLabel="Copy scenie init command" />
-      </div>
-
-      {prompts && prompts.length > 0 && (
-        <div className="flex min-w-0 flex-col gap-2">
-          <p className="sheet-selectable m-0 text-xs/relaxed text-muted-foreground">
-            Or ask your agent to make a new scene:
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <p className="sheet-selectable m-0">
+            …example scenes with command:
           </p>
-          {prompts.map((p) => (
-            <PromptCard key={p.id} prompt={p} />
-          ))}
+          <CopyRow text={INIT_CMD} />
         </div>
-      )}
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <p className="sheet-selectable m-0">
+            …or make a new scene from a prompt:
+          </p>
+          <CopyRow text={NEW_SCENE_PROMPT} mono={false} />
+        </div>
+      </div>
     </div>
   );
 }
 
 export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
   const [entries, setEntries] = useState<SceneListEntry[] | null>(null);
-  const [prompts, setPrompts] = useState<ExamplePrompt[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -212,18 +126,7 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
     void (async () => {
       try {
         const list = await fetchSceneList();
-        if (cancelled) return;
-        setEntries(list);
-        if (list.length === 0) {
-          try {
-            const p = await fetchExamplePrompts();
-            if (!cancelled) setPrompts(p);
-          } catch {
-            if (!cancelled) setPrompts([]);
-          }
-        } else if (!cancelled) {
-          setPrompts(null);
-        }
+        if (!cancelled) setEntries(list);
       } catch (err) {
         if (!cancelled) {
           setEntries(null);
@@ -235,6 +138,8 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
       cancelled = true;
     };
   }, []);
+
+  const hasList = entries !== null && entries.length > 0;
 
   let body: ReactNode;
   if (error) {
@@ -251,7 +156,7 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
       <p className="m-0 px-2 text-xs text-muted-foreground">Loading…</p>
     );
   } else if (entries.length === 0) {
-    body = <EmptyLibrary prompts={prompts} />;
+    body = <EmptyLibrary />;
   } else {
     body = (
       <ul className="m-0 flex list-none flex-col gap-px p-0">
@@ -286,9 +191,13 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
     <div className="flex min-w-0 flex-col gap-4">
       <section
         className="flex min-w-0 flex-col gap-1.5"
-        aria-labelledby="library-scenes-heading"
+        {...(hasList
+          ? { "aria-labelledby": "library-scenes-heading" }
+          : { "aria-label": "Library" })}
       >
-        <SectionHeading id="library-scenes-heading">Scenes</SectionHeading>
+        {hasList && (
+          <SectionHeading id="library-scenes-heading">Scenes</SectionHeading>
+        )}
         {body}
       </section>
     </div>

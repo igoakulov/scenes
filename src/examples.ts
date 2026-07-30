@@ -1,4 +1,4 @@
-import { access, cp, readdir, readFile, stat } from "node:fs/promises";
+import { access, cp, readdir, stat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
@@ -21,10 +21,6 @@ export function packageRoot(): string {
 
 export function examplesDir(root = packageRoot()): string {
   return join(root, "examples");
-}
-
-export function examplePromptsDir(root = packageRoot()): string {
-  return join(examplesDir(root), "prompts");
 }
 
 async function isScenePackageDir(dir: string): Promise<boolean> {
@@ -86,35 +82,5 @@ export async function seedExampleScenes(
     created.push(id);
   }
   return created;
-}
-
-export type ExamplePrompt = {
-  id: string;
-  title: string;
-  body: string;
-};
-
-/** Stable order for Library zero-state (id stem = prompt basename). */
-const PROMPT_ORDER: { id: string; title: string }[] = [
-  { id: "example-linear-algebra", title: "Example: Linear algebra intro" },
-  { id: "example-pendulum-physics", title: "Example: Pendulum homework" },
-  { id: "example-solar-system", title: "Example: Solar system" },
-];
-
-export async function loadExamplePrompts(
-  root = packageRoot(),
-): Promise<ExamplePrompt[]> {
-  const dir = examplePromptsDir(root);
-  const out: ExamplePrompt[] = [];
-  for (const { id, title } of PROMPT_ORDER) {
-    const file = join(dir, `${id}.md`);
-    try {
-      const body = (await readFile(file, "utf8")).trim();
-      if (body) out.push({ id, title, body });
-    } catch {
-      // omit missing prompts
-    }
-  }
-  return out;
 }
 

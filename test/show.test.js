@@ -144,22 +144,6 @@ describe("show", () => {
               assert.equal(byId["bad-meta"]?.id, "bad-meta");
               assert.equal(byId["bad-meta"]?.title, undefined);
               assert.equal(byId[".hidden-bak"], undefined);
-
-              const promptsRes = await httpGet(
-                `http://127.0.0.1:${port}/api/example-prompts`,
-              );
-              assert.equal(promptsRes.status, 200);
-              const prompts = JSON.parse(promptsRes.body);
-              assert.ok(Array.isArray(prompts));
-              assert.ok(prompts.length >= 1);
-              assert.ok(
-                prompts.some(
-                  (p) =>
-                    p.id === "example-linear-algebra" &&
-                    typeof p.body === "string" &&
-                    p.body.length > 0,
-                ),
-              );
             } finally {
               child.kill("SIGTERM");
             }
