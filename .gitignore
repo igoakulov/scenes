@@ -1,6 +1,3 @@
-# Local planning / private docs (not part of the published product tree)
-docs/
-
 # OS
 .DS_Store
 Thumbs.db
@@ -33,12 +30,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
-# Test / temp
-tmp/
-temp/
 *.log
 
-# Local scene libraries (not package source; workspace content when developing here)
-test-scenes/
+# Temp
+tmp/
+temp/
+
+# Local scene libraries (workspace content when developing here — not package source)
 scenes/
+test-scenes/

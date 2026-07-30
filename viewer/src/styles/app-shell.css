@@ -120,11 +120,31 @@ body,
 }
 
 .sheet-body {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
   padding: 0;
   background: var(--card);
+}
+
+/* Soft clip under tabs / sheet bottom (always on — no scroll sync). */
+.sheet-body::before,
+.sheet-body::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  height: 1.25rem;
+  z-index: 1;
+  pointer-events: none;
+}
+.sheet-body::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--card), transparent);
+}
+.sheet-body::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--card), transparent);
 }
 
 /* Native overflow (not Base UI ScrollArea). Thin dark thumb; hover-fade limited. */

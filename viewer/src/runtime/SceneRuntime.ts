@@ -76,6 +76,8 @@ export class SceneRuntime {
   private lastFrameMs: number | null = null;
   /** After update() throws, stay paused until user hits Play (no spam). */
   private updateFaulted = false;
+  /** After onFrame() throws, skip further onFrame until remount (no spam). */
+  private onFrameFaulted = false;
   private playbackListeners = new Set<() => void>();
 
   constructor(opts: SceneRuntimeOptions) {
@@ -233,6 +235,7 @@ export class SceneRuntime {
     this.sceneParams = { ...loaded.params };
     this.t = 0;
     this.updateFaulted = false;
+    this.onFrameFaulted = false;
     this.lastFrameMs = null;
     this.applyCameraMode(this.dimensions);
     this.applyHostPolicy();
@@ -260,6 +263,7 @@ export class SceneRuntime {
     // Flags unchanged on remount (static export). Keep playing boolean.
     if (this.hasUpdate()) this.t = 0;
     this.updateFaulted = false;
+    this.onFrameFaulted = false;
     this.applyHostPolicy();
     this.runSetup(loaded, params, { adoptStartCamera: false });
     // Keep playing; force on if content update exists (playback:false still runs).
@@ -318,6 +322,10 @@ export class SceneRuntime {
     return typeof this.loaded?.module.update === "function";
   }
 
+  private hasOnFrame(): boolean {
+    return typeof this.loaded?.module.onFrame === "function";
+  }
+
   /** Host idle orbit: static 3D + host camera + playback + no content update. */
   private isIdleOrbitEligible(): boolean {
     return (
@@ -349,6 +357,12 @@ export class SceneRuntime {
     this.applyAutoRotate();
     this.notifyPlayback();
     const msg = `update() threw: ${err instanceof Error ? err.message : String(err)}`;
+    this.onError?.(msg);
+  }
+
+  private handleOnFrameError(err: unknown): void {
+    this.onFrameFaulted = true;
+    const msg = `onFrame() threw: ${err instanceof Error ? err.message : String(err)}`;
     this.onError?.(msg);
   }
 
@@ -537,6 +551,15 @@ export class SceneRuntime {
         this.loaded.module.update!(this.buildHost(), this.t, dt);
       } catch (err) {
         this.handleUpdateError(err);
+      }
+    }
+
+    // Wall-clock frame hook (input/camera); runs even while content is paused.
+    if (this.hasOnFrame() && this.loaded && !this.onFrameFaulted) {
+      try {
+        this.loaded.module.onFrame!(this.buildHost(), dt);
+      } catch (err) {
+        this.handleOnFrameError(err);
       }
     }
 

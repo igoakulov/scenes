@@ -1,26 +1,43 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { readConfig } from "../config.js";
+import { packageRoot } from "../examples.js";
 import {
   printWorkspace,
   printWorkspaceErr,
   printWorkspaceNone,
 } from "../print.js";
 
+function packageVersion(): string {
+  try {
+    const raw = readFileSync(join(packageRoot(), "package.json"), "utf8");
+    const v = (JSON.parse(raw) as { version?: unknown }).version;
+    return typeof v === "string" && v ? v : "?";
+  } catch {
+    return "?";
+  }
+}
+
 export async function cmdHelp(): Promise<number> {
-  console.log(`scenie — agent-authored Three.js scenes
+  console.log(`scenie ${packageVersion()} — CLI + viewer for agent-built Three.js scenes
 
 cmds:
-  init [path] [--force]  set workspace (path|config|cwd)
-  list                   scenes (meta only)
-  validate [id]          one or all
-  show [id]              serve viewer (validate gate if id); Ctrl+C stop
+  init [path] [--force]  config workspace (path | existing | cwd); seeds example scenes if missing
+  list                   workspace + scene titles
+  validate [id]          one or all (exit 1 if issues)
+  show [id] [--no-open]  serve viewer; validate first if id; --no-open skips browser; Ctrl+C stop
   help
 
-layout: <workspace>/scenes/<id>/{metadata.json,scene.js,assets?/}
-  id: kebab-case; leading . = hidden from viewer Library only (CLI list/validate/show still work)
-config: ~/.config/scenie/config.json  (win: %APPDATA%\\scenie\\)
-meta: title, description, tags[]; optional dimensions 2|3 (default 3)
+loop: list → write scenes/<id>/ → validate → show
+  port busy on show → refresh browser or free port + re-show (do not probe HTTP)
 
-output (see docs/shell.md):
+config: ~/.config/scenie/config.json  (win: %APPDATA%\\scenie\\config.json)
+  keys: workspace, optional port (default 3471)
+layout: <workspace>/scenes/<id>/{metadata.json,scene.js,assets?/}
+  id: kebab-case folder; leading . = hidden from Library (CLI list/validate/show still work)
+meta: title, description, tags[] required; optional dimensions 2|3 (default 3)
+
+output:
   workspace <abs>   or  workspace (from config) <abs>  (bare init)
   @ scenes/<id>
   - …          list: title | ERR; validate/show: ok | path: msg

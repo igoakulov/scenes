@@ -16,8 +16,7 @@ const SKILL_INSTALL_CMD =
 
 const INIT_CMD = "scenie init";
 
-const NEW_SCENE_PROMPT =
-  "With Scenie skill, create a scene with ...";
+const NEW_SCENE_PROMPT = "With Scenie skill, create a scene with ...";
 
 async function fetchSceneList(): Promise<SceneListEntry[]> {
   const res = await fetch("/api/scenes", { cache: "no-store" });
@@ -37,36 +36,18 @@ async function fetchSceneList(): Promise<SceneListEntry[]> {
   );
 }
 
-function SectionHeading({
-  id,
-  children,
-}: {
-  id?: string;
-  children: string;
-}) {
+function SectionHeading({ id, children }: { id?: string; children: string }) {
   return (
-    <h2
-      id={id}
-      className="m-0 px-2 text-xs font-normal text-muted-foreground"
-    >
+    <h2 id={id} className="m-0 px-2 text-xs font-normal text-muted-foreground">
       {children}
     </h2>
   );
 }
 
 /** Copyable line — mono for shell commands, sans for prose prompts. */
-function CopyRow({
-  text,
-  mono = true,
-}: {
-  text: string;
-  mono?: boolean;
-}) {
+function CopyRow({ text, mono = true }: { text: string; mono?: boolean }) {
   return (
-    <CopyHitbox
-      text={text}
-      contentClassName={mono ? "font-mono" : "font-sans"}
-    >
+    <CopyHitbox text={text} contentClassName={mono ? "font-mono" : "font-sans"}>
       {text}
     </CopyHitbox>
   );
@@ -100,14 +81,12 @@ function EmptyLibrary() {
           2. Ask your AI agent to add scenes
         </p>
         <div className="flex min-w-0 flex-col gap-1.5">
-          <p className="sheet-selectable m-0">
-            …example scenes with command:
-          </p>
+          <p className="sheet-selectable m-0">…example scenes with command:</p>
           <CopyRow text={INIT_CMD} />
         </div>
         <div className="flex min-w-0 flex-col gap-1.5">
           <p className="sheet-selectable m-0">
-            …or make a new scene from a prompt:
+            …or build a new scene from a prompt:
           </p>
           <CopyRow text={NEW_SCENE_PROMPT} mono={false} />
         </div>
@@ -152,9 +131,7 @@ export function LibraryPanel({ onOpen }: { onOpen: (id: string) => void }) {
       </p>
     );
   } else if (entries === null) {
-    body = (
-      <p className="m-0 px-2 text-xs text-muted-foreground">Loading…</p>
-    );
+    body = <p className="m-0 px-2 text-xs text-muted-foreground">Loading…</p>;
   } else if (entries.length === 0) {
     body = <EmptyLibrary />;
   } else {

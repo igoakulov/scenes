@@ -128,15 +128,15 @@ describe("CLI", () => {
     let r = await runScenie(["init", workspace], env);
     assert.equal(r.code, 0, r.stderr + r.stdout);
 
-    const exampleId = "example-linear-algebra";
+    const exampleId = "example-theory";
     const metaPath = join(workspace, "scenes", exampleId, "metadata.json");
     const scenePath = join(workspace, "scenes", exampleId, "scene.js");
     await access(scenePath);
     await access(metaPath);
 
-    // prompts/screenshots must not be seeded as scene folders
-    await assert.rejects(() => access(join(workspace, "scenes", "prompts")));
+    // non-scene dirs under examples/ (e.g. screenshots) must not be seeded
     await assert.rejects(() => access(join(workspace, "scenes", "screenshots")));
+    await assert.rejects(() => access(join(workspace, "scenes", "prompts")));
 
     r = await runScenie(["validate", exampleId], env);
     assert.equal(r.code, 0, r.stderr + r.stdout);
@@ -161,7 +161,7 @@ describe("CLI", () => {
     let r = await runScenie(["init", workspace], env);
     assert.equal(r.code, 0, r.stderr + r.stdout);
 
-    await rm(join(workspace, "scenes", "example-linear-algebra"), {
+    await rm(join(workspace, "scenes", "example-theory"), {
       recursive: true,
       force: true,
     });
@@ -171,7 +171,7 @@ describe("CLI", () => {
       SCENIE_TEST_CWD: otherCwd,
     });
     assert.equal(r.code, 0, r.stderr + r.stdout);
-    await access(join(workspace, "scenes", "example-linear-algebra", "scene.js"));
+    await access(join(workspace, "scenes", "example-theory", "scene.js"));
 
     await rm(workspace, { recursive: true, force: true });
     await rm(otherCwd, { recursive: true, force: true });

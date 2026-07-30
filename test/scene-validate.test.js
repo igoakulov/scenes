@@ -136,6 +136,40 @@ export const update = 1;
     assert.ok(bad.issues.some((i) => i.path === "scene.update"));
   });
 
+  it("accepts onFrame function and rejects non-function onFrame", async () => {
+    const workspace = await mkdtemp(join(tmpdir(), "scenie-val-"));
+    await copyFixture("valid-basic", workspace, "frame-ok");
+    const { writeFile } = await import("node:fs/promises");
+    const dir = join(workspace, "scenes", "frame-ok");
+    await writeFile(
+      join(dir, "scene.js"),
+      `
+import * as THREE from "three";
+export function setup(host) {
+  host.root.add(new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshBasicMaterial()));
+}
+export function onFrame(host, dt) {
+  void host; void dt;
+}
+`,
+      "utf8",
+    );
+    const ok = await validateScene(workspace, "frame-ok");
+    assert.equal(ok.ok, true, JSON.stringify(ok.issues, null, 2));
+
+    await writeFile(
+      join(dir, "scene.js"),
+      `
+export function setup() {}
+export const onFrame = 1;
+`,
+      "utf8",
+    );
+    const bad = await validateScene(workspace, "frame-ok");
+    assert.equal(bad.ok, false);
+    assert.ok(bad.issues.some((i) => i.path === "scene.onFrame"));
+  });
+
   it("accepts full runtime opt-out with update", async () => {
     const workspace = await mkdtemp(join(tmpdir(), "scenie-val-"));
     await copyFixture("valid-basic", workspace, "full-opt");

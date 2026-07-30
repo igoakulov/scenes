@@ -18,10 +18,10 @@ import { cn } from "@/lib/utils";
 
 type SheetTab = "library" | "summary" | "explore";
 
-function readIdFromUrl(): string | null {
-  const id = new URLSearchParams(window.location.search).get("id");
-  if (!id || !id.trim()) return null;
-  return id.trim();
+function readSceneFromUrl(): string | null {
+  const scene = new URLSearchParams(window.location.search).get("scene");
+  if (!scene || !scene.trim()) return null;
+  return scene.trim();
 }
 
 /** Session-only Grid prefs keyed by scene id (and no-selection shell). */
@@ -55,15 +55,15 @@ export function App() {
   const runtimeRef = useRef<SceneRuntime | null>(null);
 
   const [sheetOpen, setSheetOpen] = useState(true);
-  const [sceneId, setSceneId] = useState<string | null>(() => readIdFromUrl());
+  const [sceneId, setSceneId] = useState<string | null>(() => readSceneFromUrl());
   const [sheetTab, setSheetTab] = useState<SheetTab>(() =>
-    readIdFromUrl() ? "summary" : "library",
+    readSceneFromUrl() ? "summary" : "library",
   );
   const [loaded, setLoaded] = useState<LoadedScene | null>(null);
   const [liveParams, setLiveParams] = useState<Record<string, ParamValue>>({});
   const [error, setError] = useState<string | null>(null);
   const [grid, setGrid] = useState<GridState>(() => {
-    const id = readIdFromUrl();
+    const id = readSceneFromUrl();
     return gridByKey.get(gridKey(id)) ?? { ...DEFAULT_GRID };
   });
   const [loading, setLoading] = useState(false);
@@ -79,7 +79,7 @@ export function App() {
       onError: (message) => setError(userFacingError(message)),
     });
     runtimeRef.current = rt;
-    const initial = gridByKey.get(gridKey(readIdFromUrl())) ?? {
+    const initial = gridByKey.get(gridKey(readSceneFromUrl())) ?? {
       ...DEFAULT_GRID,
     };
     rt.setGridState(initial);
@@ -219,7 +219,7 @@ export function App() {
     setSceneId(next);
     setSheetTab("summary");
     const url = new URL(window.location.href);
-    url.searchParams.set("id", next);
+    url.searchParams.set("scene", next);
     window.history.replaceState({}, "", url.pathname + url.search);
   }, []);
 

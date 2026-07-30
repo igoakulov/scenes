@@ -98,6 +98,10 @@ async function validateSceneModule(scenePath: string): Promise<ValidationIssue[]
     issues.push({ path: "scene.update", message: "want function" });
   }
 
+  if (mod.onFrame !== undefined && typeof mod.onFrame !== "function") {
+    issues.push({ path: "scene.onFrame", message: "want function" });
+  }
+
   if (mod.onParamsChange !== undefined && typeof mod.onParamsChange !== "function") {
     issues.push({ path: "scene.onParamsChange", message: "want function" });
   }

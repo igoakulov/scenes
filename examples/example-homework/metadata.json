@@ -1,0 +1,18 @@
+{
+  "title": "Example homework: pendulum physics",
+  "description": "Simple pendulum of length $L$, mass $m$, released from rest at angle $\\theta_0$ from the vertical. Defaults match a textbook problem: $L=0.80\\,\\mathrm{m}$, $m=0.25\\,\\mathrm{kg}$, $\\theta_0=30^\\circ$, $g=9.8\\,\\mathrm{m/s^2}$.\n\nPress **Play** to watch the swing. The purple height mark is the drop $h=L(1-\\cos\\theta_0)$ from release to the bottom \u2014 the PE that becomes KE.\n\n**Energy.** Conservation from rest to the lowest point:\n$$mgh = \\tfrac12 mv^2 \\quad\\Rightarrow\\quad v = \\sqrt{2gL(1-\\cos\\theta_0)}.$$\n\n**Tension.** At the bottom the path is circular, so\n$$T - mg = \\frac{mv^2}{L} \\quad\\Rightarrow\\quad T = m\\Bigl(g + \\frac{v^2}{L}\\Bigr).$$\n\nToggle height, energy board, force arrows, and trail; scrub $L$, $m$, $\\theta_0$, and $g$ to see $h$, $v$, and $T$ update.",
+  "tags": [
+    "example",
+    "homework",
+    "pendulum",
+    "physics",
+    "education",
+    "energy"
+  ],
+  "dimensions": 2,
+  "attribution": {
+    "author": "igoakulov",
+    "model": "grok-4.5-high",
+    "prompt": "My physics textbook is showing just a drawing for this. Use the Scenie skill to show me how it moves and help me solve this problem?\n\nA simple pendulum of length L = 0.80 m is suspended from a fixed support. The bob has mass m = 0.25 kg. At rest the pendulum hangs vertically. The bob is then pulled aside so the string makes an angle \u03b8\u2080 = 30\u00b0 with the vertical and is released from rest.\n\n1. Using conservation of energy, find the speed of the bob at the bottom of the swing.\n\n2. Find the tension in the string at the bottom of the swing.\n\nAssume g = 9.8 m/s\u00b2. Neglect air resistance. The string is massless and inextensible."
+  }
+}

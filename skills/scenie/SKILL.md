@@ -1,26 +1,29 @@
 ---
 name: scenie
 description: >-
-  Create interactive educational scenes (~ pure Three.js) with
-  Scenie CLI + local viewer. Use to help user create or view scene.
+  Build interactive educational scenes (~ pure Three.js) with Scenie
+  CLI + local viewer. Use to help user build, view, and manage scenes.
 ---
 
 # Scenie
 
-You are teacher with Three.js expertise. You use it to teach STEM subjects and concepts visually and interactively. Package includes plain Three.js scene folders + `scenie` CLI + local viewer. Content under `host.root`; runtime owns loop, chrome, and defaults unless opted out.
+You are Three.js expert that teaches STEM subjects / concepts with interactive scenes. Package includes plain Three.js scene folders + `scenie` CLI + local viewer (https://github.com/igoakulov/scenie). Content under `host.root`; host owns frame loop (see Animation), chrome, defaults unless `runtime` flags opt out.
 
 ## Install
 
 ```bash
 npm install -g scenie          # Node ≥ 20; or npm link from checkout
-scenie init [path]             # once; omit path → cwd
+scenie init [path]             # omit path → cwd; creates config
+# Native-like launcher: ASK user + create (see below)
 ```
 
-Create launcher file for user on Desktop or workspace: `/abs/path/scenie show`
+Config: `~/.config/scenie/config.json` (macOS/Linux) / `%APPDATA%\scenie\config.json` (Windows) — workspace, optional port (default 3471).
+
+Launcher (`.app`/`.lnk`): macOS `/Applications`, Windows Desktop/taskbar; icons `viewer/dist/`; URL `http://127.0.0.1:<port>/`; use default browser (with `--app` if Chromium); URL up → open only, else `show --no-open`, wait ready, open (keeps running).
 
 ## Workspace
 
-- CONFIG: `~/.config/scenie/config.json` — `workspace`, optional `port`
+- Config: see Install — keys `workspace`, optional `port`
 - Scene id = kebab-case folder name; optional leading `.` (see Versioning)
 
 ```text
@@ -36,10 +39,9 @@ Create scene folders with file tools.
 
 Unless user states otherwise:
 
-- RH Y-up (Three defaults): +X right, +Y up, +Z toward viewer on face-on XY.
+- RH Y-up; face-on XY (+Z toward viewer). Primary content near origin, modest unit scale.
 - Edu (calculus, vectors, geometry, graphs, solids): CLEAN, LIGHTWEIGHT, LOW-FI — few objects, readable annotations, insightful summaries.
 - Showcases / model benchmark demos: MAX EFFORT — higher fidelity and creative freedom.
-- Primary content near origin, modest unit scale.
 - Object / scene params user should play with (sizes, angles, scales, show/hide, modes, …) → use host-provided cards, not fixed decoration (see Interactive cards).
 
 ## Contract (MUST follow)
@@ -52,12 +54,12 @@ Unless user states otherwise:
   "description": "Edit x,y pairs; runtime redraws polyline...",
   "tags": ["geometry", "graphs"],
   "dimensions": 3,
-  "attribution": { "model": "gpt-…", "author": "…" }
+  "attribution": { "author": "…", "model": "gpt-…", "prompt": "..." }
 }
 ```
 
 - title, description, tags: required
-- description: about scene or topic based on conversation with user; simple markdown + KaTeX $…$ / $$…$$ ok
+- description: about topic, scene contents, notes from conversation with user; simple markdown + KaTeX $…$ / $$…$$ ok
 - dimensions: optional 2 | 3 (default 3) → 3 perspective+orbit, 2 ortho face-on pan/zoom
 - attribution: optional object
 
@@ -71,21 +73,24 @@ MAY override (one flag each):
 
 - lights — true: host defaults; any THREE.Light under root hides defaults. false: no host defaults.
 - helpers — true: host origin reference planes. false: none.
-- camera — true: host navigation; optional THREE.Camera under root → start pose (position/look; FOV ignored) on FIRST mount only; host STRIPS agent cameras after EVERY setup (setup re-runs on param edits). false: move host.camera; bind input to host.domElement. Do not bind `/` or `R`/`r` (host).
-- playback — true: host play/pause for content `update` OR host idle orbit (static 3D with NO `update` export). false: no transport or idle orbit.
+- camera — true: host navigation; optional THREE.Camera under root → start pose (position/look; FOV ignored) on FIRST mount only; host STRIPS agent cameras after EVERY setup. false: move host.camera; bind input to host.domElement each setup. Do not bind `/` or `R`/`r` (host).
+- playback — true: play/pause UI drives content `update`; static 3D with NO `update` → host idle orbit. false: no play/pause UI, no idle orbit; `update` if present still runs every frame (always-on).
 
 MUST NOT:
 
-- Private loops/clocks (rAF, setAnimationLoop, setInterval/setTimeout time base, GSAP ticker, …) — motion only via `update(host, t, dt)`.
+- Private frame loops — no rAF / setAnimationLoop / setInterval-as-loop / GSAP ticker; host sole rAF (Animation).
 - OrbitControls or other navigation when runtime.camera is true.
 - Custom label DOM — only `userData.annotation` strings on Object3D under root (KaTeX $…$ / $$…$$ ok). Set in setup and/or reassign in `update`; host refreshes chip when string changes.
 - host.renderer / second WebGL canvas.
 
 ### Animation
 
-Optional `export function update(host, t, dt)` — ONLY if content must change with time; host `t`/`dt`; put ALL motion here. OMIT export when static (param edits already re-run setup). Export PRESENT (even no-op or param-gated body) ⇒ NO host idle orbit; Play/Pause drives content clock. Static 3D + playback + no `update`: host idle-orbits — do not author orbit. If `camera: false` and OrbitControls use damping, call `controls.update()` from `update`.
+HOST TIME — host sole rAF; calls exported `update` / `onFrame`. Private rAF / setAnimationLoop / setInterval-as-loop / GSAP ticker FORBIDDEN (Play/Pause, param remount, scene switch cannot stop you). Both hooks OK.
+`update(host, t, dt)` optional — sim/content on host clock; Pause freezes path (`t`/`dt` stop advancing). OMIT if static; PRESENT (even no-op) ⇒ NO host idle orbit.
+`onFrame(host, dt)` optional — every frame incl. pause; wall `dt` only; input / free-fly / camera / rig. Sim stays in `update`.
+`dt` = rates/integration; `t` = phase / f(time) (`update` only). `camera: false` + OrbitControls damping → `controls.update()` in `onFrame`.
 
-### host (setup argument)
+### host (setup / update / onFrame argument)
 
 - root — THREE.Object3D; parent all content here
 - params — flat bag from params() + live edits
@@ -100,7 +105,7 @@ Optional `export function update(host, t, dt)` — ONLY if content must change w
 DISPLAY types (no `key`, not in `host.params`):
 
 - card — title, children[], optional id
-- note — guidance prose; text (KaTeX ok)
+- note — short guidance prose; text (no md, KaTeX ok)
 - label — computed display; label, value string OR `(params) => string`
 
 EDITABLE types (each has key, label, default → `host.params`):
@@ -132,7 +137,8 @@ RULES
 import * as THREE from "three";
 
 // optional: export const runtime = { lights: true, helpers: true, camera: true, playback: true };
-// optional: export function update(host, t, dt) { /* ONLY if time-varying; OMIT when static */ }
+// optional: export function update(host, t, dt) — sim; host t/dt; Pause freezes
+// optional: export function onFrame(host, dt) — wall dt; input/free-fly/camera; runs while paused — no private rAF
 
 export function setup(host) {
   const p = host.params;
@@ -222,7 +228,7 @@ export function validateParams(params) {
 }
 ```
 
-## Loop (agent)
+## Agent workflow
 
 ```bash
 scenie list                    # workspace /abs/path
@@ -233,17 +239,12 @@ scenie validate my-scene
 scenie show my-scene           # keep running; or scenie show for library
 ```
 
-Edits → tell user to refresh browser. Restart show only: switch id, dead server, or free port — then reopen/refresh URL.
+Edits → refresh browser. Port busy on show → refresh viewer or free port + re-show; do not probe HTTP routes. Restart show only: switch scene or dead server.
 
 ## Versioning and backup
 
 ```bash
 cp -R scenes/my-scene scenes/my-scene-backup   # or host file tools
 cp -R scenes/my-scene scenes/.my-scene         # leading . hides from list UI; CLI still targets
+# optional: git for anything more advanced
 ```
-
-For more: use git.
-
-## Reference
-
-https://github.com/igoakulov/scenie

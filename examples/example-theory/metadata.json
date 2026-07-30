@@ -1,11 +1,19 @@
 {
-  "title": "Example: Linear algebra intro",
+  "title": "Example theory: linear algebra",
   "description": "First-day linear algebra board: free vectors in $\\mathbb{R}^3$, the standard basis, scalar stretch, and vector addition.\n\n### Theory\n\n- A **vector** $\\mathbf{u} = (u_x, u_y, u_z)$ is an arrow: direction + magnitude. Components are signed lengths along the axes.\n- The **standard basis** $\\{\\mathbf{e}_1, \\mathbf{e}_2, \\mathbf{e}_3\\}$ (or $\\mathbf{i},\\mathbf{j},\\mathbf{k}$) are unit arrows along $+X$, $+Y$, $+Z$. Every vector is a linear combination:\n$$\\mathbf{u} = u_x\\,\\mathbf{e}_1 + u_y\\,\\mathbf{e}_2 + u_z\\,\\mathbf{e}_3.$$\n- **Scalar multiplication** $s\\,\\mathbf{u}$ stretches ($|s|>1$), shrinks ($0<|s|<1$), flips ($s<0$), or zeros ($s=0$) the arrow.\n- **Vector addition** $\\mathbf{u}+\\mathbf{v}$ is tip-to-tail (or the diagonal of the parallelogram):\n$$\\mathbf{u}+\\mathbf{v} = (u_x+v_x,\\; u_y+v_y,\\; u_z+v_z).$$\n\nToggle layers and drag the numbers while you talk. Orbit the view; keep helpers on for orientation.",
-  "tags": ["example", "linear-algebra", "vectors", "basis", "education", "3d"],
+  "tags": [
+    "example",
+    "theory",
+    "linear-algebra",
+    "vectors",
+    "basis",
+    "education",
+    "3d"
+  ],
   "dimensions": 3,
   "attribution": {
     "author": "igoakulov",
-    "model": "grok-4.5",
+    "model": "grok-4.5-high",
     "prompt": "With the Scenie skill, make a simple 3d scene for my students in class on linear algebra intro. Cover vector addition and scalar stretch, basis directions... Keep it clear enough to open while we talk. Add supporting theory in description."
   }
 }

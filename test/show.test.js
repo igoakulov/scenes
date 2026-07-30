@@ -119,6 +119,7 @@ describe("show", () => {
         const m = stdout.match(/^listen (\S+)/m);
         if (m && !listenUrl) {
           listenUrl = m[1];
+          assert.match(listenUrl, /[?&]scene=demo(?:&|$)/);
           void (async () => {
             try {
               const page = await httpGet(listenUrl);

@@ -33,7 +33,7 @@ async function isScenePackageDir(dir: string): Promise<boolean> {
   }
 }
 
-/** Scene package ids under package examples/ (skip prompts/, screenshots/, …). */
+/** Scene package ids under package examples/ (dirs with metadata.json + scene.js only). */
 export async function listExampleSceneIds(
   root = packageRoot(),
 ): Promise<string[]> {

@@ -8,16 +8,18 @@ function parseArgs(argv: string[]): {
   command: string | undefined;
   positionals: string[];
   force: boolean;
+  noOpen: boolean;
 } {
   const force = argv.includes("--force");
-  const rest = argv.filter((a) => a !== "--force");
+  const noOpen = argv.includes("--no-open");
+  const rest = argv.filter((a) => a !== "--force" && a !== "--no-open");
   const command = rest[0];
   const positionals = rest.slice(1);
-  return { command, positionals, force };
+  return { command, positionals, force, noOpen };
 }
 
 async function main(): Promise<number> {
-  const { command, positionals, force } = parseArgs(process.argv.slice(2));
+  const { command, positionals, force, noOpen } = parseArgs(process.argv.slice(2));
 
   try {
     switch (command) {
@@ -33,7 +35,7 @@ async function main(): Promise<number> {
       case "validate":
         return await cmdValidate(positionals[0]);
       case "show":
-        return await cmdShow(positionals[0]);
+        return await cmdShow(positionals[0], { noOpen });
       default:
         console.error(`Unknown command: ${command}`);
         console.error("Run `scenie help` for usage.");

@@ -1,28 +1,59 @@
 # Scenie
 
-Agent skill + local tools for interactive 2D/3D educational scenes and model showcases — plain Three.js content, with a CLI and browser viewer that own camera, chrome, and controls.
+Talk to your AI — it builds interactive 2D/3D scenes for class / homework / demos, and shows them to you in the browser. Scenie stores them as files on your device and does not collect your data.
 
 ## Examples
 
-### Linear algebra intro
+Three example scenes from real prompts. Come included in the package your AI agent installs (see Install section).
 
-![Example: Linear algebra intro](examples/screenshots/example-linear-algebra.png)
+### Theory: linear algebra ([prompt](https://github.com/igoakulov/scenie/blob/main/examples/example-theory/metadata.json))
 
-### Pendulum homework
+![Example theory: linear algebra](https://raw.githubusercontent.com/igoakulov/scenie/main/examples/screenshots/example-theory.png)
 
-![Example: Pendulum homework](examples/screenshots/example-pendulum-physics.png)
+### Homework: pendulum physics ([prompt](https://github.com/igoakulov/scenie/blob/main/examples/example-homework/metadata.json))
 
-### Solar system
+![Example homework: pendulum physics](https://raw.githubusercontent.com/igoakulov/scenie/main/examples/screenshots/example-homework.png)
 
-![Example: Solar system](examples/screenshots/example-solar-system.png)
+### Showcase: solar system ([prompt](https://github.com/igoakulov/scenie/blob/main/examples/example-showcase/metadata.json))
 
-## Who it’s for
+![Example showcase: solar system](https://raw.githubusercontent.com/igoakulov/scenie/main/examples/screenshots/example-showcase.png)
+
+## Who Scenie is for
 
 **Teachers and students** — explore STEM subjects and concepts with interactive scenes instead of static slides.
 
-**Model showcase & comparison** — build and keep demo scenes for testing and comparing 3D capabilities of AI models (benchmarks, showcases, side‑by‑sides).
+**Also useful for AI demos** — same tools for non-education showcases and side‑by‑side tests of AI models (not education-only).
+
+## Features
+
+- Learn by seeing and doing — turn ideas from a chat with your agent into 3D or 2D scenes you can open in the browser
+- Built for class and self-study — clear summaries (including math), labels in the scene, and controls that match what you’re studying
+- Hands-on, alive — drag the view, play animation, and change numbers and options to watch objects respond
+- Personal local library — scenes live as files on your device so you can reopen them later; Scenie collects zero data
+- Example scenes included — try them out, ask agent to tweak them
+- Your AI agent does all the work — just tell what you need, the agent builds, manages and shows you scenes
+- Works with your existing AI agent (with terminal access) — ChatGPT Work / Codex, Claude Cowork / Code, and similar
+
+## Why Scenie?
+
+| | Scenie + your agent | Agent w/o Scenie | ChatGPT (Math/Science) | Textbooks |
+|--|---------------------|---------------------|------------------------|-----------|
+| **Creative / topic freedom** | **Any topic** you ask | Any topic, uneven quality | ~70 pre-built topics | Fixed curriculum |
+| **Build / customize** | Natural language + built-in agent tools / assistance | No help — lots of prompting, easy throwaways | Little / none | Hand-written notes |
+| **Presentation** | **2D/3D**, labels / annotations, class-ready viewer app | Ad-hoc style / UI each time | Basic 2D graphs | Static diagrams |
+| **Interactivity** | Free camera, play/pause, **side-panel scene controls** | Ad-hoc each time | 1-2 parameters | Passive |
+| **AI** | **Your agent** — no in-app AI | Your agent | Vendor-locked | N/A |
+| **Storage** | Local scene library **you own** | Chat + scattered files | Limited | N/A |
+
+## How to use
+
+1. **Describe** — explore the subject with your AI agent, then ask it to build or show a scene with the [Scenie skill](https://github.com/igoakulov/scenie/blob/main/skills/scenie/SKILL.md) (a short guide your AI agent saves and follows to improve his skills in building scenes). Your questions and discussion can be written into the scene summary — not only the 3D/2D view.
+2. **Open** — the agent opens the scene in your **browser**: a library of your scenes, fullscreen scene view + topic summary side by side that you can read and **come back to later**.
+3. **Play** — drag the view, use **Play/Pause**, and use the **side-panel scene controls** (Explore cards with numbers, toggles, options) to watch the scene update.
 
 ## Install
+
+What you need: desktop computer + your AI agent with terminal access (ChatGPT Work / Codex, Claude Cowork / Code, and similar)
 
 Ask your AI agent to run this command to install the [Scenie skill](https://github.com/igoakulov/scenie/blob/main/skills/scenie/SKILL.md):
 
@@ -30,7 +61,7 @@ Ask your AI agent to run this command to install the [Scenie skill](https://gith
 npx skills add igoakulov/scenie --skill scenie -g -y
 ```
 
-The agent installs the skill and completes other install steps.
+The agent installs the skill and finishes setup for you (local tools + workspace folder for scenes).
 
 ### Manual / advanced
 
@@ -51,32 +82,16 @@ npm link             # optional: put `scenie` on your PATH
 scenie init          # or without link: node bin/scenie.js init
 ```
 
-### How to use
-
-1. Describe: explore the subject/concept with your agent and ask to create a scene with the Scenie skill.
-2. Explore: view the scene and its summary from your conversation with agent.
-3. Play: use live cards that change the scene, play animation, see how everything interacts!
-
-## Features
-
-- Learn by seeing and doing — turn ideas from a chat with your agent into 3D or 2D scenes you can open in the browser
-- Built for class and self-study — clear summaries (including math), labels in the scene, and controls that match what you’re studying
-- Hands-on, alive — drag the view, play animation, and change numbers and options to watch objects respond
-- Keep a personal library — save many scenes, reopen later, copy or back up the ones you care about
-- Example scenes included — try them out, ask agent to tweak them
-- Your agent does all the work — you describe the concept; the agent builds and updates the scene
-- Works with the agent you already use — Claude Code/Cowork, ChatGPT Work/Codex, and similar
-
 ## Under the hood
 
-Agent skill (git) + lightweight npm package (CLI + prebuilt viewer, **~0.5 MB**, **~6k LOC**). Requires Node ≥ 20.
+Agent skill (**250 lines**, **3K tokens**) + lightweight npm package (CLI + prebuilt viewer, **~0.5 MB**, **~6k LOC**). Requires Node ≥ 20.
 
 - Portable scene folders: `metadata.json` + plain Three.js `scene.js` (+ optional assets); no proprietary geometry DSL
 - Local viewer: library, summary (markdown + KaTeX), Explore cards, orbit (3D) / pan-zoom (2D), grid, play/pause, in-scene annotations
 - Interactive params: numbers, booleans, selects, multiselect, strings, notes, computed labels; live remount on edit
 - Agent skill: authoring contract, list → write → validate → show loop
 - CLI: `init`, `list`, `validate`, `show` over a config workspace; structured stdout for multi-surface context
-- Host-owned runtime: lights, helpers, camera, playback defaults with opt-outs; host-driven `update(t, dt)`; validate before show
+- Host-owned runtime: lights, helpers, camera, playback defaults with opt-outs; host frame loop with optional content hooks; validate before show
 
 **Stack**
 

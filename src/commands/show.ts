@@ -14,7 +14,10 @@ import { openBrowser } from "../server/open-browser.js";
 import { validateScene } from "../validate/scene.js";
 import { sceneExists } from "../workspace.js";
 
-export async function cmdShow(id: string | undefined): Promise<number> {
+export async function cmdShow(
+  id: string | undefined,
+  opts: { noOpen?: boolean } = {},
+): Promise<number> {
   const config = await readConfig();
   if (!config) {
     throw new Error("no workspace — run: scenie init");
@@ -52,11 +55,13 @@ export async function cmdShow(id: string | undefined): Promise<number> {
   }
 
   const pageUrl = id
-    ? `${server.url.replace(/\/$/, "")}/?id=${encodeURIComponent(id)}`
+    ? `${server.url.replace(/\/$/, "")}/?scene=${encodeURIComponent(id)}`
     : server.url;
 
   printListen(pageUrl);
-  openBrowser(pageUrl);
+  if (!opts.noOpen) {
+    openBrowser(pageUrl);
+  }
 
   await new Promise<void>((resolve) => {
     let stopping = false;

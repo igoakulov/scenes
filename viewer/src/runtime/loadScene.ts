@@ -40,6 +40,8 @@ export interface SceneModule {
   setup: (host: SceneHostContext) => void;
   /** Optional per-frame sim; host owns t/dt and play/pause. */
   update?: (host: SceneHostContext, t: number, dt: number) => void;
+  /** Optional every frame (incl. pause); wall-clock dt only; does not advance t. */
+  onFrame?: (host: SceneHostContext, dt: number) => void;
   params?: () => unknown;
   onParamsChange?: (
     params: Record<string, ParamValue>,

@@ -1,7 +1,7 @@
 {
   "name": "scenie",
   "version": "0.1.0",
-  "description": "Agent skill for interactive educational Three.js scenes, plus local CLI and viewer to manage and explore them.",
+  "description": "CLI and browser viewer for agent-built interactive Three.js educational scenes.",
   "type": "module",
   "bin": {
     "scenie": "./bin/scenie.js"
@@ -10,10 +10,9 @@
     "bin",
     "dist",
     "viewer/dist",
-    "examples/example-linear-algebra",
-    "examples/example-pendulum-physics",
-    "examples/example-solar-system",
-    "examples/prompts",
+    "examples/example-theory",
+    "examples/example-homework",
+    "examples/example-showcase",
     "LICENSE",
     "README.md"
   ],
@@ -22,7 +21,8 @@
     "build:viewer": "vite build --config viewer/vite.config.ts",
     "build:cli": "tsc",
     "test": "npm run build && node --test --experimental-strip-types --import ./test/register-three-hook.js test/params.test.js test/scene-validate.test.js test/cli.test.js test/show.test.js test/scene-ownership.test.js test/runtime-flags.test.js test/description-md.test.js",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "three.js",
